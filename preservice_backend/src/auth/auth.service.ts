@@ -54,7 +54,7 @@ export class AuthService {
     async login(email: string, mot_passe: string, meta?: { ua?: string; ip?: string }) {
         const user = await this.validateUser(email, mot_passe);
         const at = this.signToken(user);
-        const rt = await this.rts.generate(at.user.sub, meta);
+        const rt = await this.rts.generate(at.user.sub, 'user', meta);
         return { ...at, refresh_token: rt.token, refresh_expires_at: rt.expiresAt };
     }
 
@@ -63,16 +63,19 @@ export class AuthService {
     }, meta?: { ua?: string; ip?: string }) {
         const exists = await this.users.exists({ email: data.email });
         if (exists) throw new UnauthorizedException('Email déjà utilisé');
+
         const created = new this.users(data as any);
         await created.save();
         const user = created.toJSON();
+
         const at = this.signToken(user);
-        const rt = await this.rts.generate(at.user.sub, meta);
-        return { ...at, refresh_expires_at: rt.expiresAt };
+        const rt = await this.rts.generate(at.user.sub, 'user', meta);
+
+        return { ...at, refresh_token: rt.token, refresh_expires_at: rt.expiresAt };
     }
 
     async refresh(oldRefreshToken: string, userIdHint?: string, meta?: { ua?: string; ip?: string }) {
-        const { newToken, userId, expiresAt, cookie } = await this.rts.verifyAndRotate(oldRefreshToken, userIdHint, meta);
+        const { newToken, userId, expiresAt, cookie } = await this.rts.verifyAndRotate(oldRefreshToken, userIdHint, 'user', meta);
         // émettre un nouveau access token pour ce user
         const userDoc = await this.users.findById(userId).lean();
         if (!userDoc) throw new UnauthorizedException('Utilisateur introuvable');

@@ -4,9 +4,14 @@ import { ExtractJwt, Strategy } from 'passport-jwt';
 import { TokenBlacklistService } from './token-blacklist.service';
 import { ConfigService } from '@nestjs/config';
 
+function getBearer(req: any): string | null {
+    const h = req?.headers?.authorization || '';
+    const [type, token] = h.split(' ');
+    return type?.toLowerCase() === 'bearer' && token ? token : null;
+}
+
 @Injectable()
-export class JwtStrategy extends PassportStrategy(Strategy) {
-    private readonly accessSecret: string;
+export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
     constructor(
         private configService: ConfigService,
         private blacklist: TokenBlacklistService,
@@ -19,6 +24,19 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
             passReqToCallback: true
         });
     }
+
+    /*
+    async validate(req: any, payload: any) {
+        const token = getBearer(req);
+        if (!token) throw new UnauthorizedException('Token manquant');
+
+        // Refus si black-listé
+        const isRevoked = await this.blacklist.has(token);
+        if (isRevoked) throw new UnauthorizedException('Token révoqué');
+        
+        return payload; // sera injecté dans req.user
+    }
+    */
 
     async validate(req: Request, payload: any) {
         if (!req) throw new UnauthorizedException('Requête introuvable');

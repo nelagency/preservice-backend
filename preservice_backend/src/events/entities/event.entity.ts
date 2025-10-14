@@ -16,6 +16,32 @@ export enum EventStatusEnum {
     confirme = 'Confirmé',
     en_attente = 'En attente',
     prepare = 'Preparé',
+    termine = 'Terminé'
+}
+
+export enum EventEtatEnum {
+    ouvert = 'Ouvert',
+    complet = 'Complet',
+    urgent = 'Urgent'
+}
+
+//
+export enum EventRoleEnum {
+    coordinateur = 'Coordinateur',
+    serveur = 'Serveur',
+    hotesse = 'Hotesse',
+    accueil = 'Accueil',
+    barman = 'Barman',
+    serviceVip = 'Service VIP',
+}
+
+//
+class EventPositionReq {
+    @Prop({ type: String, enum: Object.values(EventRoleEnum), required: true })
+    role: EventRoleEnum;
+
+    @Prop({ type: Number, min: 0, default: 1 })
+    capacity: number;
 }
 
 @Schema({ timestamps: true })
@@ -52,13 +78,26 @@ export class Event {
     @Prop({ type: Number, min: 0, default: 0 })
     guests: number;
 
+    @ApiProperty({ description: "Nombre d'invités" })
+    @Prop({ type: Number, min: 0, default: 0 })
+    nbServeur: number;
+
     @ApiProperty({ description: "Status de l'évènement", enum: EventStatusEnum, default: EventStatusEnum.en_attente })
     @Prop({ type: String, enum: Object.values(EventStatusEnum), default: EventStatusEnum.en_attente, index: true })
     status: EventStatusEnum;
 
+    @ApiProperty({ description: "Etat de l'évènement", enum: EventEtatEnum, default: EventEtatEnum.ouvert })
+    @Prop({ type: String, enum: Object.values(EventEtatEnum), default: EventEtatEnum.ouvert, index: true })
+    etat: EventEtatEnum;
+
     @ApiProperty({ description: 'Montant à payer' })
     @Prop({ type: Number, min: 0, default: 0 })
     amount: number;
+
+    //
+    @ApiProperty({ type: [EventPositionReq] })
+    @Prop({ type: [{ role: String, capacity: Number }], default: [] })
+    positions: EventPositionReq[];
 }
 
 export const EventSchema = SchemaFactory.createForClass(Event);

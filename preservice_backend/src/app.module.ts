@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
+
 import { ConfigModule } from '@nestjs/config';
 import { MongooseModule } from '@nestjs/mongoose';
 import { EventsModule } from './events/events.module';
@@ -14,13 +15,11 @@ import { RolesGuard } from './common/guards/roles.guard';
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
 import configuration from 'config/configuration';
 import { JwtModule } from '@nestjs/jwt';
+import { ParticipationModule } from './participation/participation.module';
 
 @Module({
   imports: [
-    ConfigModule.forRoot({
-      isGlobal: true,
-      envFilePath: '.env', load: [configuration]
-    }),
+    ConfigModule.forRoot({ isGlobal: true, envFilePath: '.env', load: [configuration]}),
     JwtModule.register({
       global: true,
       secret: process.env.JWT_SECRET,
@@ -35,7 +34,8 @@ import { JwtModule } from '@nestjs/jwt';
     ServeurModule,
     UsersModule,
     DemandesModule,
-    AvisModule
+    AvisModule,
+    ParticipationModule
   ],
   controllers: [AppController],
   providers: [

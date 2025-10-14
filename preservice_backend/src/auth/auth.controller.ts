@@ -127,11 +127,9 @@ export class AuthController {
     })
     @ApiCreatedResponse({ description: 'Utilisateur créé et connecté (JWT retourné).' })
     async register(@Body() dto: RegisterDto, @Req() req: any, @Res({ passthrough: true }) res: Response) {
-        const old = getRefreshFromReq(req);
-        if (!old) throw new UnauthorizedException('Refresh token manquant');
         const meta = { ua: req.headers['user-agent'], ip: req.ip };
         const result = await this.auth.register(dto as any, meta);
-
+        this.setRefreshCookie(res, result.refresh_token, result.refresh_expires_at);
         return result;
     }
 

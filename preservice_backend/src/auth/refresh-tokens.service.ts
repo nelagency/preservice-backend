@@ -1,7 +1,7 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { ConflictException, Injectable, UnauthorizedException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { JwtService } from '@nestjs/jwt';
-import { createHash } from 'crypto';
+import { createHash, randomUUID } from 'crypto';
 import { Model, Types } from 'mongoose';
 import { RefreshToken, RefreshTokenDocument } from './schemas/refresh-token.schema';
 import { ConfigService } from '@nestjs/config';
@@ -36,27 +36,42 @@ export class RefreshTokensService {
         };
     }
 
-    async generate(userId: string, meta?: { ua?: string; ip?: string }) {
-        const payload = { sub: userId, typ: 'refresh' };
-        const token = this.jwt.sign(payload, { secret: this.refreshSecret, expiresIn: this.refreshExpiresIn });
-        const decoded: any = this.jwt.decode(token);
-        const exp = decoded?.exp as number;
-        if (!exp) throw new Error('No exp in refresh token');
-        const expiresAt = new Date(exp * 1000);
-        const tokenHash = sha256(token);
+    async generate(userId: string, accountType: 'user' | 'serveur', meta?: { ua?: string; ip?: string }) {
+        for (let i = 0; i < 3; i++) {
+            const payload = { sub: userId, typ: 'refresh', atp: accountType };
+            const token = this.jwt.sign(payload, {
+                secret: this.refreshSecret,
+                expiresIn: this.refreshExpiresIn,
+                jwtid: randomUUID(),
+            });
 
-        await this.model.create({
-            tokenHash,
-            userId: new Types.ObjectId(userId),
-            expiresAt,
-            userAgent: meta?.ua,
-            ip: meta?.ip,
-        });
+            const decoded: any = this.jwt.decode(token);
+            const exp = decoded?.exp as number;
+            if (!exp) throw new Error('No exp in refresh token');
+            const expiresAt = new Date(exp * 1000);
+            const tokenHash = sha256(token);
 
-        return { token, expiresAt, cookie: this.cookieOptions(expiresAt) };
+            try {
+                await this.model.create({
+                    tokenHash,
+                    userId: new Types.ObjectId(userId),
+                    accountType,
+                    expiresAt,
+                    userAgent: meta?.ua,
+                    ip: meta?.ip,
+                });
+                return { token, expiresAt, cookie: this.cookieOptions(expiresAt) };
+            } catch (e: any) {
+                if (e?.code === 11000) {
+                    continue;
+                }
+                throw e;
+            }
+        }
+        throw new ConflictException('Failed to generate a unique refresh token');
     }
 
-    async verifyAndRotate(oldToken: string, userIdHint?: string, meta?: { ua?: string; ip?: string }) {
+    async verifyAndRotate(oldToken: string, userIdHint?: string, expectedAccountType: 'user' | 'serveur' = 'user', meta?: { ua?: string; ip?: string }) {
         let payload: any;
         try {
             payload = this.jwt.verify(oldToken, { secret: this.refreshSecret });
@@ -68,16 +83,17 @@ export class RefreshTokensService {
         const doc = await this.model.findOne({ tokenHash: hash });
         if (!doc || doc.revokedAt) throw new UnauthorizedException('Refresh token révoqué');
         if (userIdHint && String(doc.userId) !== String(userIdHint)) throw new UnauthorizedException('Incohérence utilisateur');
+        if (doc.accountType !== expectedAccountType) throw new UnauthorizedException('Type de compte du refresh incorrect');
 
         // Révoque l'ancien
         doc.revokedAt = new Date();
 
         // Émet le nouveau
-        const { token: newToken, expiresAt } = await this.generate(String(doc.userId), meta);
+        const { token: newToken, expiresAt } = await this.generate(String(doc.userId), doc.accountType, meta);
         doc.replacedByHash = sha256(newToken);
         await doc.save();
 
-        return { newToken, userId: String(doc.userId), expiresAt, cookie: this.cookieOptions(expiresAt) };
+        return { newToken, userId: String(doc.userId), expiresAt, cookie: this.cookieOptions(expiresAt), accountType: doc.accountType, };
     }
 
     async revoke(token: string) {
@@ -85,7 +101,9 @@ export class RefreshTokensService {
         await this.model.updateOne({ tokenHash: hash }, { $set: { revokedAt: new Date() } });
     }
 
-    async revokeAllForUser(userId: string) {
+    async revokeAllForUser(userId: string, accountType?: 'user' | 'serveur') {
+        const query: any = { userId: new Types.ObjectId(userId) };
+        if (accountType) query.accountType = accountType;
         await this.model.updateMany({ userId: new Types.ObjectId(userId) }, { $set: { revokedAt: new Date() } });
     }
 

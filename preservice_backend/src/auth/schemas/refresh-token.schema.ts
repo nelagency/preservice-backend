@@ -19,9 +19,14 @@ export class RefreshToken {
 
     @Prop() userAgent?: string;
     @Prop() ip?: string;
+
+    @Prop({ type: String, enum: ['user', 'serveur'], default: 'user', index: true })
+    accountType: 'user' | 'serveur';
 }
 
 export const RefreshTokenSchema = SchemaFactory.createForClass(RefreshToken);
 
 // Purge auto quand expiresAt est passé
 RefreshTokenSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
+// (optionnel mais utile pour requêtes)
+RefreshTokenSchema.index({ userId: 1, accountType: 1 });

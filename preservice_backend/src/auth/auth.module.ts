@@ -9,6 +9,9 @@ import { BlacklistedToken, BlacklistedTokenSchema } from './schemas/blacklisted-
 import { TokenBlacklistService } from './token-blacklist.service';
 import { RefreshToken, RefreshTokenSchema } from './schemas/refresh-token.schema';
 import { RefreshTokensService } from './refresh-tokens.service';
+import { ServeurAuthService } from './serveur-auth.service';
+import { ServeurAuthController } from './serveur-auth.controller';
+import { ServeurModule } from 'src/serveur/serveur.module';
 
 @Module({
     imports: [
@@ -18,8 +21,9 @@ import { RefreshTokensService } from './refresh-tokens.service';
             { name: BlacklistedToken.name, schema: BlacklistedTokenSchema },
             { name: RefreshToken.name, schema: RefreshTokenSchema },
         ]),
+        ServeurModule
     ],
-    providers: [AuthService, JwtStrategy, TokenBlacklistService, RefreshTokensService],
-    controllers: [AuthController],
+    providers: [AuthService, JwtStrategy, TokenBlacklistService, RefreshTokensService, ServeurAuthService],
+    controllers: [AuthController, ServeurAuthController],
 })
 export class AuthModule { }

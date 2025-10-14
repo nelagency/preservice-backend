@@ -6,6 +6,7 @@ import { ServeurService } from './serveur.service';
 import { CreateServeurDto } from './dto/create-serveur.dto';
 import { UpdateServeurDto } from './dto/update-serveur.dto';
 import { Roles } from 'src/common/decorators/roles.decorator';
+import { Public } from 'src/common/decorators/public.decorator';
 
 @ApiTags('Serveurs')
 @ApiBearerAuth()
@@ -24,13 +25,15 @@ export class ServeurController {
     examples: {
       default: {
         value: {
-          nom: 'Ben Salah',
-          prenom: 'Karim',
+          nom: 'Talom',
+          prenom: 'Odilon',
           phone: '+21620000000',
+          email: 'odilontalom@gmail.com',
+          mot_passe: 'Passw0rd!',
           years: 3,
           skills: ['service de table', 'bar'],
           status: 'disponible',
-          etat: true
+          isActive: true
         }
       }
     }
@@ -53,6 +56,7 @@ export class ServeurController {
     return this.serveurService.findAll();
   }
 
+  @Public()
   @Get('meta/serveur-statuses')
   @ApiOperation({
     summary: 'Statuts de serveur',
@@ -90,9 +94,11 @@ export class ServeurController {
         value: {
           phone: '+21620000111',
           years: 4,
+          email: 'karim.salah+new@gmail.com.com',
+          mot_passe: 'NewPassw0rd!',
           skills: ['service de table', 'bar', 'caisse'],
           status: 'occupe',
-          etat: true
+          isActive: true
         }
       }
     }

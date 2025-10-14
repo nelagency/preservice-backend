@@ -1,8 +1,7 @@
-// src/events/dto/create-event.dto.ts
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { IsArray, IsDateString, IsEmail, IsEnum, IsMongoId, IsNumber, IsOptional, IsString, Min, MinLength, ValidateNested } from 'class-validator';
 import { Type } from 'class-transformer';
-import { EventStatusEnum, EventTypeEnum } from '../entities/event.entity';
+import { EventEtatEnum, EventStatusEnum, EventTypeEnum } from '../entities/event.entity';
 
 
 export class CreateEventDto {
@@ -33,9 +32,19 @@ export class CreateEventDto {
     @IsOptional() @Type(() => Number) @IsNumber() @Min(0)
     guests?: number;
 
+    //
+    @ApiPropertyOptional()
+    @IsOptional() @Type(() => Number) @IsNumber() @Min(0)
+    nbServeur?: number;
+
     @ApiPropertyOptional({ enum: EventStatusEnum, default: EventStatusEnum.en_attente })
     @IsOptional() @IsEnum(EventStatusEnum)
     status?: EventStatusEnum;
+
+    //
+    @ApiProperty({ description: "Etat de l'évènement", enum: EventEtatEnum, default: EventEtatEnum.ouvert })
+    @IsOptional() @IsEnum(EventEtatEnum)
+    etat?: EventEtatEnum;
 
     @ApiPropertyOptional()
     @IsOptional() @Type(() => Number) @IsNumber() @Min(0)
