@@ -33,7 +33,7 @@ export class ParticipationController {
     },
   })
   @ApiCreatedResponse({ description: 'Candidature enregistrée.' })
-  @Roles('user', 'admin', 'superadmin')
+  @Roles('serveur', 'admin', 'superadmin')
   apply(@Param('eventId') eventId: string, @Body() dto: ApplyDto) {
     return this.svc.apply(eventId, dto.serveurId, dto.notes);
   }
@@ -57,11 +57,7 @@ export class ParticipationController {
   })
   @ApiOkResponse({ description: 'Candidature mise à jour.' })
   @Roles('admin', 'superadmin')
-  approve(
-    @Param('eventId') eventId: string,
-    @Param('id') id: string,
-    @Body() dto: ApproveDto,
-  ) {
+  approve( @Param('eventId') eventId: string, @Param('id') id: string, @Body() dto: ApproveDto ) {
     return this.svc.setCandidatureStatus(eventId, id, dto.status);
   }
 
@@ -88,11 +84,7 @@ export class ParticipationController {
   })
   @ApiOkResponse({ description: 'Affectation mise à jour.' })
   @Roles('admin', 'superadmin')
-  assign(
-    @Param('eventId') eventId: string,
-    @Param('id') id: string,
-    @Body() dto: AssignDto,
-  ) {
+  assign( @Param('eventId') eventId: string, @Param('id') id: string, @Body() dto: AssignDto ) {
     return this.svc.assignRole(eventId, id, dto);
   }
 
@@ -154,16 +146,29 @@ export class ParticipationController {
     return this.svc.confirmAll(eventId);
   }
 
-  @Public()
-  @Get(':eventId')
+  @Get()
+  //@Get(':eventId')
   @ApiOperation({
     summary: 'Lister les participations d’un évènement',
     description: 'Filtre par :eventId (pending/approved/rejected selon implémentation service).',
   })
   @ApiParam({ name: 'eventId', description: 'Identifiant de levenement' })
   @ApiOkResponse({ description: 'Evenement retourné.' })
+  @Roles('serveur', 'admin', 'superadmin')
   findByEvent(@Param('eventId') eventId: string) {
     return this.svc.findByEvent(eventId); // ⬅️ ajoute ce service
+  }
+
+  @Public()
+  @Get(':serveurId')
+  @ApiOperation({
+    summary: 'Lister les participations d’un serveur',
+    description: 'Filtre par :serveurId (pending/approved/rejected selon implémentation service).',
+  })
+  @ApiParam({ name: 'serveurId', description: 'Identifiant du serveur' })
+  @ApiOkResponse({ description: 'Partricipations du serveur retournées.' })
+  findByServeur(@Param('serveurId') serveurId: string) {
+    return this.svc.findByServeur(serveurId); // ⬅️ ajoute ce service
   }
 
   // -------------------- CRUD générique (optionnel) --------------------
@@ -181,7 +186,7 @@ export class ParticipationController {
     return this.svc.create(createParticipationDto);
   }
 
-  @Public()
+  /*@Public()
   @Get()
   @ApiOperation({
     summary: 'Lister les participations (CRUD)',
@@ -192,7 +197,7 @@ export class ParticipationController {
   @ApiOkResponse({ description: 'Liste des participations.' })
   findAll() {
     return this.svc.findAll();
-  }
+  }*/
 
   @Public()
   @Get(':id')
@@ -229,8 +234,8 @@ export class ParticipationController {
   })
   @ApiParam({ name: 'id', description: 'Identifiant de la participation' })
   @ApiOkResponse({ description: 'Participation supprimée.' })
-  @Roles('admin', 'superadmin')
-  remove(@Param('id') id: string) {
-    return this.svc.remove(+id);
+  @Roles('serveur', 'admin', 'superadmin')
+  remove(@Param('eventId') eventId: string, @Param('id') id: string) {
+    return this.svc.remove(id);
   }
 }

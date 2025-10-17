@@ -21,18 +21,22 @@ export class EventsController {
     operationId: 'eventsCreate',
   })
   @ApiBody({
-    type: CreateEventDto,
+    type: CreateEventDto, 
     examples: {
       default: {
         value: {
           title: "Mariage Ali & Ines",
+          description: "description",
           location: "Salle des Fêtes - Sfax",
-          date: "2025-12-20T17:00:00.000Z",
+          startdate: "2025-12-20T17:00:00.000Z",
+          enddate: "2025-12-20T17:00:00.000Z",
           type: "Mariages",
           serveurs: [],
+          nbServeur: 18,
           guests: 180,
-          status: "en_attente",
-          amount: 4500
+          status: "En attente",
+          amount: 4500,
+          etat: "Urgent"
         }
       }
     }

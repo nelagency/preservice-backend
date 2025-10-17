@@ -191,6 +191,17 @@ export class ParticipationService {
     }
     return this.model
       .find({ event: new Types.ObjectId(eventId) })
+      .populate('serveur', 'nom prenom status email')
+      .populate('event')
+      .lean()
+  }
+
+  async findByServeur(serveurId: string) {
+    if (!Types.ObjectId.isValid(serveurId)) {
+      throw new BadRequestException('serveurId invalide');
+    }
+    return this.model
+      .find({ serveur: new Types.ObjectId(serveurId) })
       .populate('serveur', 'event')
       .lean()
   }
@@ -211,7 +222,10 @@ export class ParticipationService {
     return `This action updates a #${id} participation`;
   }
 
-  remove(id: number) {
-    return `This action removes a #${id} participation`;
+  async remove(id: string) {
+    if (!Types.ObjectId.isValid(id)) throw new BadRequestException('id invalide');
+    const doc = await this.model.findByIdAndDelete(id);
+    if (!doc) throw new NotFoundException('Participation not found');
+    return { ok: true };
   }
 }
