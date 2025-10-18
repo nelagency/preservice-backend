@@ -37,7 +37,7 @@ export class AvisController {
     }
   })
   @ApiCreatedResponse({ description: 'Avis créé.' })
-  @Roles('admin', 'superadmin')
+  //@Roles('admin', 'superadmin')
   create(@Body() createAviDto: CreateAviDto) {
     return this.avisService.create(createAviDto);
   }
@@ -66,7 +66,6 @@ export class AvisController {
     return this.avisService.findOne(id);
   }
 
-  @Public()
   @Patch(':id')
   @ApiOperation({
     summary: "Mise à jour d'un avis",
@@ -86,6 +85,7 @@ export class AvisController {
     }
   })
   @ApiOkResponse({ description: 'Avis mis à jour.' })
+  @Roles('admin', 'superadmin')
   update(@Param('id') id: string, @Body() updateAviDto: UpdateAviDto) {
     return this.avisService.update(id, updateAviDto);
   }

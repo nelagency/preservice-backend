@@ -16,6 +16,8 @@ import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
 import configuration from 'config/configuration';
 import { JwtModule } from '@nestjs/jwt';
 import { ParticipationModule } from './participation/participation.module';
+import { MailModule } from './mail/mail.module';
+import { StatsModule } from './stats/stats.module';
 
 @Module({
   imports: [
@@ -35,7 +37,9 @@ import { ParticipationModule } from './participation/participation.module';
     UsersModule,
     DemandesModule,
     AvisModule,
-    ParticipationModule
+    ParticipationModule,
+    MailModule,
+    StatsModule
   ],
   controllers: [AppController],
   providers: [

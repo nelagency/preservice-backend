@@ -3,7 +3,10 @@ import { Document, Types } from 'mongoose';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { EventTypeEnum } from 'src/events/entities/event.entity';
 
-export type DemandeDocument = Demande & Document;
+export type DemandeDocument = Demande & Document & {
+    createdAt: Date;
+    updatedAt: Date;
+};
 
 export enum DemandeStatusEnum {
     en_attente = 'en_attente',

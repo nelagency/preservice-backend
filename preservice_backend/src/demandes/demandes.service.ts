@@ -19,11 +19,11 @@ export class DemandesService {
   }
 
   async findAll() {
-    return this.model.find().sort({ createdAt: -1 }).lean().populate('client');
+    return this.model.find().sort({ createdAt: -1 }).lean().populate('client', 'nom email');
   }
 
   async findOne(id: string) {
-    const doc = await this.model.findById(id).lean().populate('client');
+    const doc = await this.model.findById(id).lean().populate('client', 'nom email');
     if (!doc) throw new NotFoundException('Demande not found');
     return doc;
   }
@@ -44,6 +44,10 @@ export class DemandesService {
   }
 
   typesKV() {
-    return Object.entries(DemandeStatusEnum).map(([key, value]) => ({ key, value }));
+    return Object.values(EventTypeEnum).map(v => ({ key: v, value: v }));
+  }
+
+  statusesKV() {
+    return Object.values(DemandeStatusEnum).map(v => ({ key: v, value: v }));
   }
 }

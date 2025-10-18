@@ -5,12 +5,14 @@ import { InjectModel } from '@nestjs/mongoose';
 import { EventDocument, EventRoleEnum } from 'src/events/entities/event.entity';
 import { Model, Types } from 'mongoose';
 import { AssignmentStatus, CandidatureStatus, Participation, ParticipationDocument } from './entities/participation.entity';
+import { MailService } from 'src/mail/mail.service';
 
 @Injectable()
 export class ParticipationService {
   constructor(
     @InjectModel(Participation.name) private model: Model<ParticipationDocument>,
-    @InjectModel(Event.name) private eventModel: Model<EventDocument>
+    @InjectModel(Event.name) private eventModel: Model<EventDocument>,
+    private readonly mail: MailService,
   ) { }
 
   async apply(eventId: string, serveurId: string, notes?: string) {
@@ -33,6 +35,8 @@ export class ParticipationService {
   }
 
   async setCandidatureStatus(eventId: string, participationId: string, status: CandidatureStatus) {
+    const before = await this.model.findById(participationId).select('candidatureStatus').lean();
+
     const doc = await this.model.findByIdAndUpdate(
       participationId,
       {
@@ -40,8 +44,28 @@ export class ParticipationService {
         approvedAt: status === CandidatureStatus.approved ? new Date() : undefined,
       },
       { new: true }
-    );
+    )
+      .populate('serveur', 'email nom prenom')
+      .lean();
     if (!doc) throw new NotFoundException('Participation not found');
+    // Envoi mail si transition vers "approved"
+    const justApproved =
+      status === CandidatureStatus.approved && before?.candidatureStatus !== CandidatureStatus.approved;
+
+    if (justApproved) {
+      const event = await this.eventModel.findById(eventId).lean();
+      if (event && (doc as any).serveur?.email) {
+        await this.mail.participationApproved((doc as any).serveur, event, {
+          // Tu peux surcharger ici :
+          // subject: 'Sujet custom',
+          // intro: 'Intro custom <strong>HTML</strong>',
+          // outro: 'Outro custom',
+          // ctaLabel: 'Voir la mission',
+          // ctaHref: `${process.env.FRONTEND_BASE_URL}/serveur/evenements/${event._id}`,
+        });
+      }
+    }
+
     return doc;
   }
 

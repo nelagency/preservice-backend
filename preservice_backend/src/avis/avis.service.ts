@@ -22,11 +22,20 @@ export class AvisService {
   }
 
   async findAll() {
-    return this.model.find().sort({ createdAt: -1 }).lean().populate('client', 'event');
+    return this.model
+      .find()
+      .sort({ createdAt: -1 })
+      .populate({ path: 'client', select: 'nom prenom email' })
+      .populate({ path: 'event', select: 'type startdate enddate createdAt' })
+      .lean();
   }
 
   async findOne(id: string) {
-    const doc = await this.model.findById(id).lean().populate('client', 'event');
+    const doc = await this.model
+      .findById(id)
+      .populate({ path: 'client', select: 'nom prenom email' })
+      .populate({ path: 'event', select: 'type startdate enddate createdAt' })
+      .lean();
     if (!doc) throw new NotFoundException('Avis not found');
     return doc;
   }
