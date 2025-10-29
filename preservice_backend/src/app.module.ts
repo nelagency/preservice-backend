@@ -2,7 +2,7 @@ import { Module } from '@nestjs/common';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 
-import { ConfigModule } from '@nestjs/config';
+import { ConfigModule, ConfigService } from '@nestjs/config';
 import { MongooseModule } from '@nestjs/mongoose';
 import { EventsModule } from './events/events.module';
 import { ServeurModule } from './serveur/serveur.module';
@@ -18,14 +18,33 @@ import { JwtModule } from '@nestjs/jwt';
 import { ParticipationModule } from './participation/participation.module';
 import { MailModule } from './mail/mail.module';
 import { StatsModule } from './stats/stats.module';
+import { TimesheetsModule } from './timesheets/timesheets.module';
+
+import type { StringValue } from 'ms';
+import { NotificationsModule } from './notifications/notifications.module';
+
+function coerceExpires(raw: string | number | undefined, fallback: number | StringValue): number | StringValue {
+  if (raw === undefined || raw === null || raw === '') return fallback;
+  if (typeof raw === 'number') return raw;
+  // si "3600" -> number, sinon on garde la string ("1d", "12h", etc.)
+  return /^\d+$/.test(raw) ? Number(raw) : (raw as StringValue);
+}
 
 @Module({
   imports: [
-    ConfigModule.forRoot({ isGlobal: true, envFilePath: '.env', load: [configuration]}),
-    JwtModule.register({
+    ConfigModule.forRoot({ isGlobal: true, envFilePath: '.env', load: [configuration] }),
+    JwtModule.registerAsync({
       global: true,
-      secret: process.env.JWT_SECRET,
-      signOptions: { expiresIn: process.env.JWT_EXPIRES_IN }
+      inject: [ConfigService],
+      useFactory: (cfg: ConfigService) => {
+        const secret = cfg.get<string>('auth.accessToken') ?? 'changeme';
+        const rawExp = cfg.get<string | number>('auth.accessIn', '60m');
+        const expiresIn = coerceExpires(rawExp, '60m'); 
+        return {
+          secret,
+          signOptions: { expiresIn },
+        };
+      },
     }),
     MongooseModule.forRoot((process.env.MONGO_URI)!, {
       serverSelectionTimeoutMS: 2000,
@@ -39,7 +58,9 @@ import { StatsModule } from './stats/stats.module';
     AvisModule,
     ParticipationModule,
     MailModule,
-    StatsModule
+    StatsModule,
+    TimesheetsModule,
+    NotificationsModule
   ],
   controllers: [AppController],
   providers: [

@@ -5,14 +5,21 @@ import { createHash, randomUUID } from 'crypto';
 import { Model, Types } from 'mongoose';
 import { RefreshToken, RefreshTokenDocument } from './schemas/refresh-token.schema';
 import { ConfigService } from '@nestjs/config';
+import type { StringValue } from 'ms';
 
 
 const sha256 = (s: string) => createHash('sha256').update(s, 'utf8').digest('hex');
 
+function coerceExpires(raw: string | number | undefined, fallback: number | StringValue): number | StringValue {
+    if (raw === undefined || raw === null || raw === '') return fallback;
+    if (typeof raw === 'number') return raw;
+    return /^\d+$/.test(raw) ? Number(raw) : (raw as StringValue);
+}
+
 @Injectable()
 export class RefreshTokensService {
     private readonly refreshSecret: string;
-    private readonly refreshExpiresIn: string;
+    private readonly refreshExpiresIn: number | StringValue;
 
     constructor(
         private configService: ConfigService,
@@ -20,7 +27,8 @@ export class RefreshTokensService {
         @InjectModel(RefreshToken.name) private model: Model<RefreshTokenDocument>,
     ) {
         this.refreshSecret = this.configService.get('auth.refreshToken')!
-        this.refreshExpiresIn = this.configService.get('auth.refreshIn')!
+        const raw = this.configService.get<string | number>('auth.refreshIn');
+        this.refreshExpiresIn = coerceExpires(raw, '7d')
     }
 
     private cookieOptions(expiresAt: Date) {

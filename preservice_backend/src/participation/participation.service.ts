@@ -6,6 +6,7 @@ import { EventDocument, EventRoleEnum } from 'src/events/entities/event.entity';
 import { Model, Types } from 'mongoose';
 import { AssignmentStatus, CandidatureStatus, Participation, ParticipationDocument } from './entities/participation.entity';
 import { MailService } from 'src/mail/mail.service';
+import { NotificationsService } from 'src/notifications/notifications.service';
 
 @Injectable()
 export class ParticipationService {
@@ -13,6 +14,7 @@ export class ParticipationService {
     @InjectModel(Participation.name) private model: Model<ParticipationDocument>,
     @InjectModel(Event.name) private eventModel: Model<EventDocument>,
     private readonly mail: MailService,
+    private readonly notifications: NotificationsService,
   ) { }
 
   async apply(eventId: string, serveurId: string, notes?: string) {
@@ -26,6 +28,33 @@ export class ParticipationService {
         candidatureStatus: CandidatureStatus.pending,
         notes,
       });
+    } catch (e: any) {
+      if (e?.code === 11000) {
+        throw new BadRequestException('Déjà candidat sur cet évènement');
+      }
+      throw e;
+    }
+  }
+
+  async applyEvent(eventId: string, serveurId: string, notes?: string, adminIds?: string[]) {
+    const event = await this.eventModel.findById(eventId).lean();
+    if (!event) throw new NotFoundException('Event not found');
+
+    try {
+      const apply = await this.model.create({
+        event: new Types.ObjectId(eventId),
+        serveur: new Types.ObjectId(serveurId),
+        candidatureStatus: CandidatureStatus.pending,
+        notes,
+      });
+      await this.notifications.pushToAdmins({
+        type: 'PARTICIPATION_REQUESTED',
+        payload: { eventId, serveurId },
+        actorId: serveurId,
+        title: 'Demande de participation',
+        message: 'Un serveur a postulé à un événement',
+      });
+      return apply;
     } catch (e: any) {
       if (e?.code === 11000) {
         throw new BadRequestException('Déjà candidat sur cet évènement');
@@ -54,6 +83,52 @@ export class ParticipationService {
 
     if (justApproved) {
       const event = await this.eventModel.findById(eventId).lean();
+      if (event && (doc as any).serveur?.email) {
+        await this.mail.participationApproved((doc as any).serveur, event, {
+          // Tu peux surcharger ici :
+          // subject: 'Sujet custom',
+          // intro: 'Intro custom <strong>HTML</strong>',
+          // outro: 'Outro custom',
+          // ctaLabel: 'Voir la mission',
+          // ctaHref: `${process.env.FRONTEND_BASE_URL}/serveur/evenements/${event._id}`,
+        });
+      }
+    }
+
+    return doc;
+  }
+
+  async setCandidatureStatusEvent(eventId: string, participationId: string, status: CandidatureStatus, adminId: string,) {
+    const before = await this.model.findById(participationId).select('candidatureStatus').lean();
+
+    const doc = await this.model.findByIdAndUpdate(
+      participationId,
+      {
+        candidatureStatus: status,
+        approvedAt: status === CandidatureStatus.approved ? new Date() : undefined,
+      },
+      { new: true }
+    ).populate('serveur', 'email nom prenom').lean();
+
+    if (!doc) throw new NotFoundException('Participation not found');
+    // Envoi mail si transition vers "approved"
+    const justApproved =
+      status === CandidatureStatus.approved && before?.candidatureStatus !== CandidatureStatus.approved;
+
+    const serveurIdStr =
+      (doc as any)?.serveur?._id?.toString?.() ??
+      (doc as any)?.serveur?.toString?.();
+
+    if (justApproved && serveurIdStr) {
+      const event = await this.eventModel.findById(eventId).lean();
+      await this.notifications.pushToUsers({
+        type: 'PARTICIPATION_APPROVED',
+        userIds: [doc.serveur._id.toString()],
+        payload: { eventId },
+        actorId: adminId,
+        title: 'Participation confirmée',
+        message: `Vous êtes affecté sur un événement ${event?.title}`,
+      });
       if (event && (doc as any).serveur?.email) {
         await this.mail.participationApproved((doc as any).serveur, event, {
           // Tu peux surcharger ici :
@@ -127,6 +202,13 @@ export class ParticipationService {
 
   /** Confirmer toutes les affectations provisoires */
   async confirmAll(eventId: string) {
+    await this.model.updateMany(
+      { event: eventId, assignmentStatus: AssignmentStatus.provisional },
+      { $set: { assignmentStatus: AssignmentStatus.confirmed } }
+    );
+  }
+
+  async confirmAllEvent(eventId: string) {
     await this.model.updateMany(
       { event: eventId, assignmentStatus: AssignmentStatus.provisional },
       { $set: { assignmentStatus: AssignmentStatus.confirmed } }

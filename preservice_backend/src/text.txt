@@ -1,0 +1,49 @@
+// EventsService.create(...)
+await this.notifications.pushToUsers({
+  type: 'EVENT_PUBLISHED',
+  userIds: serveurIdsCiblés,              // ex: tous les serveurs ou filtrés par skills
+  payload: { eventId: event._id.toString() },
+  actorId: authorId,
+  title: 'Nouvel événement publié',
+  message: event.title,
+});
+
+// ParticipationsService.apply(...)
+await this.notifications.pushToUsers({
+  type: 'PARTICIPATION_REQUESTED',
+  userIds: adminIds,
+  payload: { eventId, serveurId },
+  actorId: serveurId,
+  title: 'Demande de participation',
+  message: 'Un serveur a postulé à un événement',
+});
+
+// ParticipationsService.approve(...)
+await this.notifications.pushToUsers({
+  type: 'PARTICIPATION_APPROVED',
+  userIds: [serveurId],
+  payload: { eventId },
+  actorId: adminId,
+  title: 'Participation confirmée',
+  message: 'Vous êtes affecté sur un événement',
+});
+
+// TimesheetsService.submitForEvent(...)
+await this.notifications.pushToUsers({
+  type: 'TIMESHEET_SUBMITTED',
+  userIds: adminIds,
+  payload: { eventId, timesheetId: doc._id.toString() },
+  actorId: serveurId,
+  title: 'Feuille d’heures soumise',
+  message: 'Un serveur a soumis ses horaires',
+});
+
+// TimesheetsService.review(...)
+await this.notifications.pushToUsers({
+  type: 'TIMESHEET_REVIEWED',
+  userIds: [serveurId],
+  payload: { eventId, timesheetId: ts._id.toString(), status: ts.status },
+  actorId: reviewerId,
+  title: ts.status === 'approved' ? 'Feuille approuvée' : 'Feuille rejetée',
+  message: ts.validationComment || undefined,
+});

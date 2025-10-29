@@ -4,6 +4,8 @@ import { Model, Types } from 'mongoose';
 import { Event, EventDocument, EventStatusEnum, EventTypeEnum } from './entities/event.entity';
 import { CreateEventDto } from './dto/create-event.dto';
 import { UpdateEventDto } from './dto/update-event.dto';
+import { Notification, NotificationDocument } from 'src/notifications/entities/notification.entity';
+import { NotificationsService } from 'src/notifications/notifications.service';
 
 function startOfMonth(d = new Date()) {
   return new Date(d.getFullYear(), d.getMonth(), 1, 0, 0, 0, 0);
@@ -21,7 +23,10 @@ function pctChange(curr: number, prev: number) {
 
 @Injectable()
 export class EventsService {
-  constructor(@InjectModel(Event.name) private model: Model<EventDocument>) { }
+  constructor(
+    @InjectModel(Event.name) private model: Model<EventDocument>,
+    private readonly notif: NotificationsService
+  ) { }
 
   /** CRUD par défaut **/
   async create(dto: CreateEventDto) {
@@ -32,6 +37,27 @@ export class EventsService {
     if (dto.enddate) payload.date = new Date(dto.enddate);
 
     const created = await this.model.create(payload);
+
+    return created.toJSON();
+  }
+
+  async createEvent(dto: CreateEventDto, authorId: string, serveurIdsCiblés: string[]) {
+    const payload: any = { ...dto };
+
+    if (dto.serveurs) payload.serveurs = dto.serveurs.map((s) => new Types.ObjectId(s));
+    if (dto.startdate) payload.date = new Date(dto.startdate);
+    if (dto.enddate) payload.date = new Date(dto.enddate);
+
+    const created = await this.model.create(payload);
+
+    await this.notif.pushToServeurs({
+      type: 'EVENT_PUBLISHED',
+      serveurIds: serveurIdsCiblés,
+      payload: { eventId: created.id.toString() },
+      actorId: authorId,
+      title: 'Nouvel événement publié',
+      message: created.description,
+    });
 
     return created.toJSON();
   }

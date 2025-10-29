@@ -19,7 +19,7 @@ import { MailService } from './mail.service';
                     },
                 },
                 defaults: {
-                    from: process.env.MAIL_FROM ?? '"PrestService" <no-reply@prestservice.tn>',
+                    from: process.env.MAIL_FROM ?? '"PrestService" <no-reply@nelagency.com>',
                 },
                 template: {
                     dir: join(__dirname, 'templates'),

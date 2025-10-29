@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, Req } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags, ApiOperation, ApiOkResponse, ApiCreatedResponse, ApiBody, ApiParam } from '@nestjs/swagger';
 import { ParticipationService } from './participation.service';
 import { ApplyDto, ApproveDto, AssignDto, BulkAssignDto, CreateParticipationDto } from './dto/create-participation.dto';
@@ -57,8 +57,8 @@ export class ParticipationController {
   })
   @ApiOkResponse({ description: 'Candidature mise à jour.' })
   @Roles('admin', 'superadmin')
-  approve( @Param('eventId') eventId: string, @Param('id') id: string, @Body() dto: ApproveDto ) {
-    return this.svc.setCandidatureStatus(eventId, id, dto.status);
+  approve( @Param('eventId') eventId: string, @Param('id') id: string, @Body() dto: ApproveDto, @Req() req: any ) {
+    return this.svc.setCandidatureStatusEvent(eventId, id, dto.status, req.user.sub);
   }
 
   // -------------------- Affectation à un poste --------------------
