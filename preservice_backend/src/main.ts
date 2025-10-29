@@ -28,8 +28,7 @@ async function bootstrap() {
     'http://localhost:3001',
     'http://127.0.0.1:3000',
     'http://127.0.0.1:3001',
-    'https://prest-service-front-9fm7.vercel.app', 
-    'https://prest-service-front-one.vercel.app'
+    'https://prest-service-front-ashen.vercel.app'
   ]);
 
   app.enableCors({
