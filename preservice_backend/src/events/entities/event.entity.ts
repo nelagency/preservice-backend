@@ -98,6 +98,16 @@ export class Event {
     @ApiProperty({ type: [EventPositionReq] })
     @Prop({ type: [{ role: String, capacity: Number }], default: [] })
     positions: EventPositionReq[];
+
+    // ---- Médias publics ----
+    @Prop({ type: Types.ObjectId, ref: 'MediaAsset' })
+    cover?: Types.ObjectId;
+
+    @Prop({ type: [{ type: Types.ObjectId, ref: 'MediaAsset' }], default: [] })
+    gallery: Types.ObjectId[];
+
+    @Prop({ type: [{ type: Types.ObjectId, ref: 'BeforeAfterPair' }], default: [] })
+    beforeAfter: Types.ObjectId[];
 }
 
 export const EventSchema = SchemaFactory.createForClass(Event);

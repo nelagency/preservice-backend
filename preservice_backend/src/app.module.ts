@@ -22,6 +22,7 @@ import { TimesheetsModule } from './timesheets/timesheets.module';
 
 import type { StringValue } from 'ms';
 import { NotificationsModule } from './notifications/notifications.module';
+import { MediaModule } from './media/media.module';
 
 function coerceExpires(raw: string | number | undefined, fallback: number | StringValue): number | StringValue {
   if (raw === undefined || raw === null || raw === '') return fallback;
@@ -60,7 +61,8 @@ function coerceExpires(raw: string | number | undefined, fallback: number | Stri
     MailModule,
     StatsModule,
     TimesheetsModule,
-    NotificationsModule
+    NotificationsModule,
+    MediaModule
   ],
   controllers: [AppController],
   providers: [
