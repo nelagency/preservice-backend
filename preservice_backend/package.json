@@ -6,6 +6,7 @@
   "private": true,
   "license": "UNLICENSED",
   "scripts": {
+    "email:test": "TS_NODE_TRANSPILE_ONLY=1 ts-node -r tsconfig-paths/register scripts/test-email.ts",
     "build": "nest build",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
     "start": "nest start",
@@ -40,7 +41,7 @@
     "cookie-parser": "^1.4.7",
     "handlebars": "^4.7.8",
     "mongoose": "^8.18.1",
-    "nodemailer": "^7.0.9",
+    "nodemailer": "^7.0.10",
     "passport": "^0.7.0",
     "passport-jwt": "^4.0.1",
     "reflect-metadata": "^0.2.2",
@@ -58,7 +59,9 @@
     "@types/express": "^5.0.0",
     "@types/jest": "^30.0.0",
     "@types/node": "^22.19.0",
+    "@types/nodemailer": "^7.0.3",
     "@types/supertest": "^6.0.2",
+    "dotenv": "^17.2.3",
     "eslint": "^9.18.0",
     "eslint-config-prettier": "^10.0.1",
     "eslint-plugin-prettier": "^5.2.2",
@@ -71,7 +74,8 @@
     "ts-loader": "^9.5.2",
     "ts-node": "^10.9.2",
     "tsconfig-paths": "^4.2.0",
-    "typescript": "^5.7.3",
+    "tsx": "^4.20.6",
+    "typescript": "^5.9.3",
     "typescript-eslint": "^8.20.0"
   },
   "jest": {

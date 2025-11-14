@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
+import { S3Client, PutObjectCommand, DeleteObjectCommand } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { randomUUID } from 'crypto';
 
@@ -25,6 +25,11 @@ export class R2Service {
     const cmd = new PutObjectCommand({ Bucket: this.bucket, Key: key, ContentType: contentType });
     const url = await getSignedUrl(this.s3, cmd, { expiresIn: expiresSeconds });
     return { url, headers: { 'Content-Type': contentType } };
+  }
+
+  async deleteObject(key: string) {
+    await this.s3.send(new DeleteObjectCommand({ Bucket: this.bucket, Key: key }));
+    return { success: true };
   }
 
   publicUrl(key: string) {

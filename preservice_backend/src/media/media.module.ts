@@ -6,12 +6,14 @@ import { MediaController } from './media.controller';
 import { MediaService } from './media.service';
 import { R2Service } from './r2.service';
 import { StreamService } from './stream.service';
+import { Event, EventSchema } from 'src/events/entities/event.entity';
 
 @Module({
     imports: [
         MongooseModule.forFeature([
             { name: MediaAsset.name, schema: MediaAssetSchema },
             { name: BeforeAfterPair.name, schema: BeforeAfterPairSchema },
+            { name: Event.name, schema: EventSchema },
         ])
     ],
     controllers: [MediaController],

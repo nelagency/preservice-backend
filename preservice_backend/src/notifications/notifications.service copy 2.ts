@@ -7,7 +7,7 @@ import { Serveur, ServeurDocument } from 'src/serveur/entities/serveur.entity';
 import { User, UserDocument } from 'src/users/entities/user.entity';
 import { Timesheet, TimesheetDocument } from 'src/timesheets/entities/timesheet.entity';
 import { MailService } from 'src/mail/mail.service';
-import { Event, EventDocument } from 'src/events/entities/event.entity';
+import { EventDocument } from 'src/events/entities/event.entity';
 import { EmailService } from 'src/email/email.service';
 
 type PushBase = {
@@ -197,27 +197,21 @@ export class NotificationsService {
         }
     }
 
-    async listMine(recipientId: string, model: RecipientModel, limit = 50, before?: string) {
-        const q: any = { recipient: new Types.ObjectId(recipientId), recipientModel: model };
+    async listMine(userId: string, limit = 50, before?: string) {
+        const q: any = { user: new Types.ObjectId(userId) };
         if (before) q.createdAt = { $lt: new Date(before) };
         return this.notifModel.find(q).sort({ createdAt: -1 }).limit(limit).lean();
     }
 
-    async unreadCount(recipientId: string, model: RecipientModel) {
-        return this.notifModel.countDocuments({ recipient: recipientId, recipientModel: model, read: false });
+    async unreadCount(userId: string) {
+        return this.notifModel.countDocuments({ user: userId, read: false });
     }
 
-    async markRead(recipientId: string, model: RecipientModel, id: string) {
-        await this.notifModel.updateOne(
-            { _id: id, recipient: recipientId, recipientModel: model },
-            { $set: { read: true } },
-        );
+    async markRead(userId: string, id: string) {
+        await this.notifModel.updateOne({ _id: id, user: userId }, { $set: { read: true } });
     }
 
-    async markAllRead(recipientId: string, model: RecipientModel) {
-        await this.notifModel.updateMany(
-            { recipient: recipientId, recipientModel: model, read: false },
-            { $set: { read: true } },
-        );
+    async markAllRead(userId: string) {
+        await this.notifModel.updateMany({ user: userId, read: false }, { $set: { read: true } });
     }
 }

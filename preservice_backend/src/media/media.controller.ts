@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Patch, Post, Query } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Patch, Post, Query } from '@nestjs/common';
 import { ApiBearerAuth, ApiBody, ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { MediaService } from './media.service';
 import { RequestR2PresignDto, FinalizeR2UploadDto, ApproveMediaDto, CreateBeforeAfterDto, CreateStreamDirectUploadDto, FinalizeStreamUploadDto } from './dto/media.dto';
@@ -58,17 +58,33 @@ export class MediaController {
     @Get('by-event/:eventId')
     @ApiOperation({ summary: 'Lister les médias d’un événement' })
     @ApiOkResponse({ description: 'Liste des MediaAsset' })
-    @Roles('admin', 'superadmin', 'serveur')
+    //@Roles('admin', 'superadmin', 'serveur')
     listByEvent(@Param('eventId') eventId: string) {
         return this.svc.listByEvent(eventId);
     }
 
     // ---- Paires avant/après (publiques) ----
+    @Public()
     @Post('before-after')
     @ApiOperation({ summary: 'Créer une paire Avant/Après (publique)' })
     @ApiBody({ type: CreateBeforeAfterDto })
-    @Roles('admin', 'superadmin', 'serveur', 'coordinateur')
+    //@Roles('admin', 'superadmin', 'serveur', 'coordinateur')
     createPair(@Body() dto: CreateBeforeAfterDto) {
         return this.svc.createBeforeAfter(dto);
+    }
+
+    @Public()
+    @Get('pairs/by-event/:eventId')
+    @ApiOperation({ summary: 'Lister les paires Avant/Après d’un événement' })
+    @ApiOkResponse({ description: 'Liste BeforeAfterPair' })
+    listPairs(@Param('eventId') eventId: string) {
+        return this.svc.listPairsByEvent(eventId);
+    }
+
+    @Delete(':id')
+    @ApiOperation({ summary: 'Supprimer un média (R2 ou Stream) et nettoyer les références' })
+    @Roles('admin', 'superadmin')
+    remove(@Param('id') id: string) {
+        return this.svc.deleteAsset(id);
     }
 }

@@ -7,7 +7,7 @@ export type NotificationType =
     | 'EVENT_PUBLISHED'
     | 'PARTICIPATION_REQUESTED'
     | 'PARTICIPATION_APPROVED'
-    | 'TIMESHEET_SUBMITTED'
+    | 'TIMESHEET_SUBMITTED' 
     | 'TIMESHEET_REVIEWED'
     | 'TIMESHEET_PAID';
 
@@ -41,4 +41,4 @@ export class Notification {
 }
 
 export const NotificationSchema = SchemaFactory.createForClass(Notification);
-NotificationSchema.index({ user: 1, createdAt: -1 });
+NotificationSchema.index({ recipient: 1, recipientModel: 1, createdAt: -1 });

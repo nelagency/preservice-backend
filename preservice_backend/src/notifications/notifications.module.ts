@@ -10,6 +10,7 @@ import { User, UserSchema } from 'src/users/entities/user.entity';
 import { EventSchema } from 'src/events/entities/event.entity';
 import { Timesheet, TimesheetSchema } from 'src/timesheets/entities/timesheet.entity';
 import { MailModule } from 'src/mail/mail.module';
+import { EmailModule } from 'src/email/email.module';
 
 @Module({
     imports: [
@@ -21,6 +22,7 @@ import { MailModule } from 'src/mail/mail.module';
             { name: Timesheet.name, schema: TimesheetSchema },
         ]),
         MailModule,
+        EmailModule,
         JwtModule.register({
             secret: process.env.ACCESS_JWT_SECRET,
             signOptions: { expiresIn: '15m' },

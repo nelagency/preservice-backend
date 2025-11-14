@@ -121,23 +121,16 @@ export class ParticipationService {
 
     if (justApproved && serveurIdStr) {
       const event = await this.eventModel.findById(eventId).lean();
-      await this.notifications.pushToUsers({
+      await this.notifications.pushToServeurs({
         type: 'PARTICIPATION_APPROVED',
-        userIds: [doc.serveur._id.toString()],
+        serveurIds: [doc.serveur._id.toString()],
         payload: { eventId },
         actorId: adminId,
         title: 'Participation confirmée',
         message: `Vous êtes affecté sur un événement ${event?.title}`,
       });
       if (event && (doc as any).serveur?.email) {
-        await this.mail.participationApproved((doc as any).serveur, event, {
-          // Tu peux surcharger ici :
-          // subject: 'Sujet custom',
-          // intro: 'Intro custom <strong>HTML</strong>',
-          // outro: 'Outro custom',
-          // ctaLabel: 'Voir la mission',
-          // ctaHref: `${process.env.FRONTEND_BASE_URL}/serveur/evenements/${event._id}`,
-        });
+        await this.mail.participationApproved((doc as any).serveur, event);
       }
     }
 

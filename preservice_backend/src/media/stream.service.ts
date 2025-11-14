@@ -34,4 +34,17 @@ export class StreamService {
         if (!json.success) throw new Error(`Stream patch failed: ${JSON.stringify(json.errors)}`);
         return json.result;
     }
+
+    async deleteVideo(uid: string) {
+        const resp = await fetch(
+            `https://api.cloudflare.com/client/v4/accounts/${this.accountId}/stream/${uid}`,
+            {
+                method: 'DELETE',
+                headers: { 'Authorization': `Bearer ${this.apiToken}` },
+            }
+        );
+        const json = await resp.json();
+        if (!json.success) throw new Error(`Stream delete failed: ${JSON.stringify(json.errors)}`);
+        return { success: true };
+    }
 }

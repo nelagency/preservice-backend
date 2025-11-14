@@ -5,6 +5,7 @@ import { R2Service } from './r2.service';
 import { StreamService } from './stream.service';
 import { MediaAsset, MediaAssetDocument, MediaKind, MediaProvider, UploaderRole } from './entities/media-asset.entity';
 import { BeforeAfterPair, BeforeAfterPairDocument } from './entities/before-after.entity';
+import { Event, EventDocument } from 'src/events/entities/event.entity';
 
 @Injectable()
 export class MediaService {
@@ -13,6 +14,7 @@ export class MediaService {
         private readonly stream: StreamService,
         @InjectModel(MediaAsset.name) private mediaModel: Model<MediaAssetDocument>,
         @InjectModel(BeforeAfterPair.name) private pairModel: Model<BeforeAfterPairDocument>,
+        @InjectModel(Event.name) private eventModel: Model<EventDocument>,
     ) { }
 
     // --- R2 (images) ---
@@ -83,6 +85,10 @@ export class MediaService {
         return this.mediaModel.find({ event: new Types.ObjectId(eventId) }).sort({ createdAt: -1 });
     }
 
+    async listPairsByEvent(eventId: string) {
+        return this.pairModel.find({ event: new Types.ObjectId(eventId) }).sort({ createdAt: -1 });
+    }
+
     async createBeforeAfter(dto: { eventId: string; beforeId: string; afterId: string; caption?: string; }) {
         const pair = await this.pairModel.create({
             event: new Types.ObjectId(dto.eventId),
@@ -96,5 +102,35 @@ export class MediaService {
 
     async findAssetById(id: string) {
         return this.mediaModel.findById(id);
+    }
+
+    async deleteAsset(assetId: string) {
+        const asset = await this.mediaModel.findById(assetId);
+        if (!asset) throw new NotFoundException('Media not found');
+
+        // 1) supprimer du provider
+        if (asset.provider === MediaProvider.r2 && asset.key) {
+            await this.r2.deleteObject(asset.key);
+        }
+        if (asset.provider === MediaProvider.stream && asset.stream?.uid) {
+            await this.stream.deleteVideo(asset.stream.uid);
+        }
+
+        // 2) supprimer paires avant/après qui référencent cet asset
+        const pairs = await this.pairModel.find({ $or: [{ before: asset._id }, { after: asset._id }] });
+        const pairIds = pairs.map(p => p._id);
+        if (pairIds.length) {
+            await this.pairModel.deleteMany({ _id: { $in: pairIds } });
+            await this.eventModel.updateMany({ beforeAfter: { $in: pairIds } }, { $pull: { beforeAfter: { $in: pairIds } } });
+        }
+
+        // 3) nettoyer références Event (cover, gallery)
+        await this.eventModel.updateMany({ cover: asset._id }, { $unset: { cover: 1 } });
+        await this.eventModel.updateMany({ gallery: asset._id }, { $pull: { gallery: asset._id } });
+
+        // 4) supprimer le document
+        await this.mediaModel.deleteOne({ _id: asset._id });
+
+        return { success: true };
     }
 }
