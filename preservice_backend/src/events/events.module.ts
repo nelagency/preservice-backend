@@ -12,7 +12,7 @@ import { NotificationsModule } from 'src/notifications/notifications.module';
   ],
   controllers: [EventsController],
   providers: [EventsService],
-  exports: [MongooseModule]
+  exports: [MongooseModule, EventsService]
 })
 
 export class EventsModule {}

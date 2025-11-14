@@ -1,17 +1,23 @@
 import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
+import { Model, Types } from 'mongoose';
 import { CreateServeurDto } from './dto/create-serveur.dto';
 import { UpdateServeurDto } from './dto/update-serveur.dto';
 import { Serveur, ServeurDocument, ServeurStatus } from './entities/serveur.entity';
 import * as bcrypt from 'bcryptjs';
+import { Event, EventDocument } from 'src/events/entities/event.entity';
+import { Participation, ParticipationDocument } from 'src/participation/entities/participation.entity';
 
 const SALT_ROUNDS = 10;
 const sanitizeEmail = (e?: string) => (e ?? '').trim().toLowerCase();
 
 @Injectable()
 export class ServeurService {
-  constructor(@InjectModel(Serveur.name) private model: Model<ServeurDocument>) { }
+  constructor(
+    @InjectModel(Serveur.name) private model: Model<ServeurDocument>,
+    @InjectModel(Event.name) private readonly eventModel: Model<EventDocument>,
+    @InjectModel(Participation.name) private readonly participationModel: Model<ParticipationDocument>,
+  ) { }
 
   /** CRUD par défaut **/
   async create(dto: CreateServeurDto) {
@@ -64,5 +70,47 @@ export class ServeurService {
   /** Statuts de serveur (key/value) **/
   serveurStatusesKV() {
     return Object.entries(ServeurStatus).map(([key, value]) => ({ key, value }));
+  }
+
+  async listAssignedEvents(serverId: string) {
+    const sid = new Types.ObjectId(serverId);
+    const parts = await this.participationModel.find({ serveur: sid }).populate('event').lean();
+
+    // Map → DTO attendu côté front
+    return parts.map(p => {
+      const ev = p.event as any;
+      const iso = (ev?.startdate instanceof Date ? ev.startdate.toISOString().slice(0, 10) : (ev?.startdate || ''));
+      return {
+        _id: ev?._id?.toString() || p._id.toString(),
+        title: ev?.title || 'Événement',
+        date: iso,
+        role: (p.role as any) || 'Non assigné',
+        active: !!ev && new Date(ev.startdate) <= new Date() ? true : false, // adapte ta logique "active"
+      };
+    });
+  }
+
+  async changePassword(id: string, { currentPassword, newPassword }: { currentPassword: string; newPassword: string }) {
+    const srv = await this.model.findById(id);
+    if (!srv) throw new NotFoundException('Serveur introuvable');
+
+    const hashField = srv.mot_passe;
+
+    const ok = await bcrypt.compare(currentPassword, hashField);
+    if (!ok) {
+      throw new Error('Mot de passe actuel invalide');
+    }
+
+    const salt = await bcrypt.genSalt(10);
+    const newHash = await bcrypt.hash(newPassword, salt);
+
+    // sauvegarde sous le bon champ
+    if (typeof srv.mot_passe !== 'undefined') srv.mot_passe = newHash as any;
+
+    (srv as any).passwordChangedAt = new Date();
+
+    await srv.save();
+
+    return { success: true };
   }
 }

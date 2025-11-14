@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, ValidationPipe, UsePipes } from '@nestjs/common';
 import {
   ApiBearerAuth, ApiTags, ApiOperation, ApiOkResponse, ApiCreatedResponse, ApiBody
 } from '@nestjs/swagger';
@@ -7,6 +7,7 @@ import { CreateServeurDto } from './dto/create-serveur.dto';
 import { UpdateServeurDto } from './dto/update-serveur.dto';
 import { Roles } from 'src/common/decorators/roles.decorator';
 import { Public } from 'src/common/decorators/public.decorator';
+import { ChangePasswordDto } from './dto/change-password.dto';
 
 @ApiTags('Serveurs')
 @ApiBearerAuth()
@@ -79,6 +80,34 @@ export class ServeurController {
   @Roles('admin', 'superadmin')
   findOne(@Param('id') id: string) {
     return this.serveurService.findOne(id);
+  }
+
+  @Get(':id/assigned-events')
+  @ApiOperation({
+    summary: "L'ensemble des evenements assignés d'un serveur",
+    operationId: 'listAssignedEvents',
+  })
+  @ApiOkResponse({ description: 'Events assigns du serveur.' })
+  @Roles('admin', 'superadmin', 'serveur')
+  async listAssignedEvents(@Param('id') id: string) {
+    return this.serveurService.listAssignedEvents(id);
+  }
+
+  @Patch(':id/password')
+  @UsePipes(new ValidationPipe({
+    whitelist: true,
+    transform: true,
+    forbidNonWhitelisted: false,
+    validationError: { target: false, value: false },
+  }))
+  @ApiOperation({
+    summary: "Changer le password d'un serveur",
+    operationId: 'changePassword',
+  })
+  @ApiOkResponse({ description: 'Mot de passe du serveur mis à jour.' })
+  @Roles('admin', 'superadmin', 'serveur')
+  async changePassword(@Param('id') id: string, @Body() body: ChangePasswordDto) {
+    return this.serveurService.changePassword(id, body);
   }
 
   @Patch(':id')

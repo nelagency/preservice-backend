@@ -17,6 +17,6 @@ import { NotificationsModule } from 'src/notifications/notifications.module';
   ],
   controllers: [ParticipationController],
   providers: [ParticipationService],
-  exports: [MongooseModule]
+  exports: [MongooseModule, ParticipationService]
 })
 export class ParticipationModule { }
