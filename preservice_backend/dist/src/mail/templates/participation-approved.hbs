@@ -1,0 +1,58 @@
+{{!-- src/mail/templates/participation-approved.hbs --}}
+<!doctype html>
+<html lang="fr">
+    <body
+        style="margin:0;padding:0;background:#f6f7f9;font-family:system-ui,Segoe UI,Roboto,Arial">
+        <table role="presentation" width="100%" cellspacing="0" cellpadding="0"
+            style="padding:24px 0;">
+            <tr>
+                <td align="center">
+                    <table role="presentation" width="600" cellspacing="0"
+                        cellpadding="0"
+                        style="background:#ffffff;border-radius:12px;padding:24px;border:1px solid #e5e7eb;">
+                        <tr>
+                            <td style="font-size:16px;color:#111827;">
+                                <h2 style="margin:0 0 12px 0;">Bonjour
+                                    {{name}},</h2>
+                                <p
+                                    style="margin:0 0 12px 0;line-height:1.6;">{{{intro}}}</p>
+
+                                <div
+                                    style="margin:18px 0;padding:12px 16px;border:1px solid #e5e7eb;border-radius:10px;background:#f9fafb;">
+                                    <div
+                                        style="font-weight:600;margin-bottom:4px;">Détails</div>
+                                    <div><strong>Évènement :</strong>
+                                        {{eventTitle}}</div>
+                                    <div><strong>Date :</strong>
+                                        {{eventDate}}</div>
+                                    <div><strong>Lieu :</strong>
+                                        {{eventLocation}}</div>
+                                </div>
+
+                                <p
+                                    style="margin:0 0 18px 0;line-height:1.6;">{{{outro}}}</p>
+
+                                <div style="margin:20px 0;">
+                                    <a href="{{ctaHref}}"
+                                        style="display:inline-block;background:#111827;color:#fff;text-decoration:none;padding:12px 18px;border-radius:8px;font-weight:600;">
+                                        {{ctaLabel}}
+                                    </a>
+                                </div>
+
+                                <p
+                                    style="margin-top:24px;color:#6b7280;font-size:12px;">
+                                    Si le bouton ne fonctionne pas,
+                                    copiez-collez ce lien : <br />
+                                    <span
+                                        style="color:#111827">{{ctaHref}}</span>
+                                </p>
+                            </td>
+                        </tr>
+                    </table>
+                    <div style="color:#9ca3af;font-size:12px;margin-top:12px;">©
+                        {{year}} PrestService</div>
+                </td>
+            </tr>
+        </table>
+    </body>
+</html>
