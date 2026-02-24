@@ -21,6 +21,7 @@ const class_validator_1 = require("class-validator");
 const token_blacklist_service_1 = require("./token-blacklist.service");
 const refresh_tokens_service_1 = require("./refresh-tokens.service");
 const config_1 = require("@nestjs/config");
+const user_entity_1 = require("../users/entities/user.entity");
 class LoginDto {
     email;
     mot_passe;
@@ -41,8 +42,10 @@ class RegisterDto {
     email;
     numero_tel;
     mot_passe;
+    mot_de_passe;
     adresse;
     role;
+    telephone;
 }
 __decorate([
     (0, swagger_1.ApiProperty)(),
@@ -56,25 +59,42 @@ __decorate([
 ], RegisterDto.prototype, "email", void 0);
 __decorate([
     (0, swagger_1.ApiProperty)(),
+    (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsString)(),
     __metadata("design:type", String)
 ], RegisterDto.prototype, "numero_tel", void 0);
 __decorate([
     (0, swagger_1.ApiProperty)(),
+    (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsString)(),
     (0, class_validator_1.MinLength)(6),
     __metadata("design:type", String)
 ], RegisterDto.prototype, "mot_passe", void 0);
 __decorate([
     (0, swagger_1.ApiProperty)(),
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.MinLength)(6),
+    __metadata("design:type", String)
+], RegisterDto.prototype, "mot_de_passe", void 0);
+__decorate([
+    (0, swagger_1.ApiProperty)(),
+    (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsString)(),
     __metadata("design:type", String)
 ], RegisterDto.prototype, "adresse", void 0);
 __decorate([
     (0, swagger_1.ApiProperty)(),
+    (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsString)(),
     __metadata("design:type", String)
 ], RegisterDto.prototype, "role", void 0);
+__decorate([
+    (0, swagger_1.ApiProperty)(),
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], RegisterDto.prototype, "telephone", void 0);
 function getBearer(req) {
     const h = req?.headers?.authorization || '';
     const [type, token] = h.split(' ');
@@ -87,6 +107,18 @@ function getRefreshFromReq(req) {
     const h = req?.headers?.authorization || '';
     const [type, token] = h.split(' ');
     return type?.toLowerCase() === 'refresh' && token ? token : null;
+}
+function normalizeRole(input) {
+    if (!input)
+        return undefined;
+    const role = input.trim().toLowerCase();
+    if (role === 'client' || role === 'utilisateur' || role === 'user')
+        return user_entity_1.UserRole.user;
+    if (role === 'admin')
+        return user_entity_1.UserRole.admin;
+    if (role === 'superadmin' || role === 'super-admin')
+        return user_entity_1.UserRole.superadmin;
+    return undefined;
 }
 let AuthController = class AuthController {
     configService;
@@ -130,7 +162,24 @@ let AuthController = class AuthController {
     }
     async register(dto, req, res) {
         const meta = { ua: req.headers['user-agent'], ip: req.ip };
-        const result = await this.auth.register(dto, meta);
+        const mot_passe = dto.mot_passe ?? dto.mot_de_passe;
+        const numero_tel = dto.numero_tel ?? dto.telephone;
+        const role = normalizeRole(dto.role);
+        if (!mot_passe || mot_passe.length < 6) {
+            throw new common_1.BadRequestException('mot_passe must be a string with minimum length of 6');
+        }
+        if (!numero_tel || typeof numero_tel !== 'string') {
+            throw new common_1.BadRequestException('numero_tel must be a string');
+        }
+        const payload = {
+            nom: dto.nom,
+            email: dto.email,
+            numero_tel,
+            adresse: dto.adresse,
+            mot_passe,
+            role: role ?? user_entity_1.UserRole.user,
+        };
+        const result = await this.auth.register(payload, meta);
         this.setRefreshCookie(res, result.refresh_token, result.refresh_expires_at);
         return result;
     }

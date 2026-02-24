@@ -1,12 +1,13 @@
-import { Body, Controller, Get, HttpCode, HttpStatus, Post, Req, Res, UnauthorizedException } from '@nestjs/common';
+import { BadRequestException, Body, Controller, Get, HttpCode, HttpStatus, Post, Req, Res, UnauthorizedException } from '@nestjs/common';
 import { ApiBearerAuth, ApiBody, ApiCreatedResponse, ApiOkResponse, ApiOperation, ApiProperty, ApiTags, ApiUnauthorizedResponse } from '@nestjs/swagger';
 import type { Response } from 'express';
 import { AuthService } from './auth.service';
 import { Public } from '../common/decorators/public.decorator';
-import { IsEmail, IsString, MinLength } from 'class-validator';
+import { IsEmail, IsOptional, IsString, MinLength } from 'class-validator';
 import { TokenBlacklistService } from './token-blacklist.service';
 import { RefreshTokensService } from './refresh-tokens.service';
 import { ConfigService } from '@nestjs/config';
+import { UserRole } from 'src/users/entities/user.entity';
 
 class LoginDto {
     @ApiProperty() @IsEmail()
@@ -23,17 +24,23 @@ class RegisterDto {
     @ApiProperty() @IsEmail()
     email: string;
 
-    @ApiProperty() @IsString()
-    numero_tel: string;
+    @ApiProperty() @IsOptional() @IsString()
+    numero_tel?: string;
 
-    @ApiProperty() @IsString() @MinLength(6)
-    mot_passe: string;
+    @ApiProperty() @IsOptional() @IsString() @MinLength(6)
+    mot_passe?: string;
 
-    @ApiProperty() @IsString()
+    @ApiProperty() @IsOptional() @IsString() @MinLength(6)
+    mot_de_passe?: string;
+
+    @ApiProperty() @IsOptional() @IsString()
     adresse?: string;
 
-    @ApiProperty() @IsString()
+    @ApiProperty() @IsOptional() @IsString()
     role?: string;
+
+    @ApiProperty() @IsOptional() @IsString()
+    telephone?: string;
 }
 
 function getBearer(req: any): string | null {
@@ -49,6 +56,15 @@ function getRefreshFromReq(req: any): string | null {
     const h = req?.headers?.authorization || '';
     const [type, token] = h.split(' ');
     return type?.toLowerCase() === 'refresh' && token ? token : null;
+}
+
+function normalizeRole(input?: string): UserRole | undefined {
+    if (!input) return undefined;
+    const role = input.trim().toLowerCase();
+    if (role === 'client' || role === 'utilisateur' || role === 'user') return UserRole.user;
+    if (role === 'admin') return UserRole.admin;
+    if (role === 'superadmin' || role === 'super-admin') return UserRole.superadmin;
+    return undefined;
 }
 
 @ApiTags('Auth')
@@ -128,7 +144,27 @@ export class AuthController {
     @ApiCreatedResponse({ description: 'Utilisateur créé et connecté (JWT retourné).' })
     async register(@Body() dto: RegisterDto, @Req() req: any, @Res({ passthrough: true }) res: Response) {
         const meta = { ua: req.headers['user-agent'], ip: req.ip };
-        const result = await this.auth.register(dto as any, meta);
+        const mot_passe = dto.mot_passe ?? dto.mot_de_passe;
+        const numero_tel = dto.numero_tel ?? dto.telephone;
+        const role = normalizeRole(dto.role);
+
+        if (!mot_passe || mot_passe.length < 6) {
+            throw new BadRequestException('mot_passe must be a string with minimum length of 6');
+        }
+        if (!numero_tel || typeof numero_tel !== 'string') {
+            throw new BadRequestException('numero_tel must be a string');
+        }
+
+        const payload = {
+            nom: dto.nom,
+            email: dto.email,
+            numero_tel,
+            adresse: dto.adresse,
+            mot_passe,
+            role: role ?? UserRole.user,
+        };
+
+        const result = await this.auth.register(payload as any, meta);
         this.setRefreshCookie(res, result.refresh_token, result.refresh_expires_at);
         return result;
     }
