@@ -31,7 +31,8 @@ async function bootstrap() {
     'http://127.0.0.1:3000',
     'http://127.0.0.1:3001',
     'https://prest-service-front-ashen.vercel.app',
-    'https://dasboard.nelagency.com'
+    'https://dasboard.nelagency.com',
+    'https://dashboard.nelagency.com'
   ]);
   if (deployedOrigin) allowedOrigins.add(deployedOrigin);
 
@@ -44,6 +45,10 @@ async function bootstrap() {
       if (/^https:\/\/[a-z0-9-]+\.ngrok-free\.app$/i.test(origin)) {
         return cb(null, true);
       }
+      // Autorise les sous-domaines Render (Swagger hébergé sur le même service).
+      if (/^https:\/\/[a-z0-9-]+\.onrender\.com$/i.test(origin)) {
+        return cb(null, true);
+      }
 
       if (allowedOrigins.has(origin)) return cb(null, true);
 
@@ -53,6 +58,15 @@ async function bootstrap() {
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
     allowedHeaders: 'Content-Type, Authorization',
   })
+
+  // Health/info routes for platform pings and manual checks.
+  const httpAdapter = app.getHttpAdapter();
+  httpAdapter.get('/', (_req: unknown, res: { status: (code: number) => { json: (body: unknown) => void } }) => {
+    res.status(200).json({ service: 'preservice-backend', status: 'ok', docs: '/api/docs' });
+  });
+  httpAdapter.get('/api', (_req: unknown, res: { status: (code: number) => { json: (body: unknown) => void } }) => {
+    res.status(200).json({ service: 'preservice-backend', status: 'ok', docs: '/api/docs' });
+  });
 
   const config = new DocumentBuilder()
     .setTitle('PrestService API')
