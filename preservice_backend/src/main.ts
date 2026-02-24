@@ -23,6 +23,8 @@ async function bootstrap() {
 
   app.use(cookieParser())
 
+  const deployedOrigin = (process.env.BACKEND_PUBLIC_URL || process.env.RENDER_EXTERNAL_URL || '').replace(/\/$/, '');
+
   const allowedOrigins = new Set([
     'http://localhost:3000',
     'http://localhost:3001',
@@ -31,6 +33,7 @@ async function bootstrap() {
     'https://prest-service-front-ashen.vercel.app',
     'https://dasboard.nelagency.com'
   ]);
+  if (deployedOrigin) allowedOrigins.add(deployedOrigin);
 
   app.enableCors({
     origin: (origin, cb) => {
@@ -47,7 +50,7 @@ async function bootstrap() {
       return cb(new Error(`CORS blocked for origin: ${origin}`), false);
     },
     credentials: true,
-    ethods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
+    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
     allowedHeaders: 'Content-Type, Authorization',
   })
 
