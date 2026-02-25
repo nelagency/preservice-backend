@@ -1,0 +1,36 @@
+name: Cron Maintenance
+
+on:
+  schedule:
+    - cron: "0 3 * * *"
+  workflow_dispatch:
+
+jobs:
+  maintenance:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: PrestServiceBackEnd/preservice_backend
+    env:
+      MONGO_URI: ${{ secrets.MONGO_URI }}
+      CRON_REVOKED_RETENTION_DAYS: ${{ vars.CRON_REVOKED_RETENTION_DAYS }}
+      CRON_BLACKLIST_RETENTION_DAYS: ${{ vars.CRON_BLACKLIST_RETENTION_DAYS }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: PrestServiceBackEnd/preservice_backend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build backend
+        run: npm run build
+
+      - name: Run maintenance script
+        run: npm run cron:maintenance
