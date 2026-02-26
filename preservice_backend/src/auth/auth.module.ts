@@ -12,6 +12,7 @@ import { RefreshTokensService } from './refresh-tokens.service';
 import { ServeurAuthService } from './serveur-auth.service';
 import { ServeurAuthController } from './serveur-auth.controller';
 import { ServeurModule } from 'src/serveur/serveur.module';
+import { MailModule } from 'src/mail/mail.module';
 
 @Module({
     imports: [
@@ -21,7 +22,8 @@ import { ServeurModule } from 'src/serveur/serveur.module';
             { name: BlacklistedToken.name, schema: BlacklistedTokenSchema },
             { name: RefreshToken.name, schema: RefreshTokenSchema },
         ]),
-        ServeurModule
+        ServeurModule,
+        MailModule,
     ],
     providers: [AuthService, JwtStrategy, TokenBlacklistService, RefreshTokensService, ServeurAuthService],
     controllers: [AuthController, ServeurAuthController],

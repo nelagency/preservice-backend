@@ -43,6 +43,19 @@ class RegisterDto {
     telephone?: string;
 }
 
+class ForgotPasswordDto {
+    @ApiProperty() @IsEmail()
+    email: string;
+}
+
+class ResetPasswordDto {
+    @ApiProperty() @IsString()
+    token: string;
+
+    @ApiProperty() @IsString() @MinLength(6)
+    new_password: string;
+}
+
 function getBearer(req: any): string | null {
     const h = req?.headers?.authorization || '';
     const [type, token] = h.split(' ');
@@ -195,6 +208,22 @@ export class AuthController {
         // pose le nouveau cookie et efface l’ancien (rotation)
         this.setRefreshCookie(res, refresh_token, refresh_expires_at);
         return { user, access_token, refresh_token, refresh_expires_at };
+    }
+
+    @Public()
+    @Post('forgot-password')
+    @HttpCode(HttpStatus.OK)
+    @ApiOperation({ summary: 'Demande de reinitialisation mot de passe', operationId: 'authForgotPassword' })
+    async forgotPassword(@Body() dto: ForgotPasswordDto) {
+        return this.auth.requestPasswordReset(dto.email);
+    }
+
+    @Public()
+    @Post('reset-password')
+    @HttpCode(HttpStatus.OK)
+    @ApiOperation({ summary: 'Reinitialisation mot de passe par token', operationId: 'authResetPassword' })
+    async resetPassword(@Body() dto: ResetPasswordDto) {
+        return this.auth.resetPassword(dto.token, dto.new_password);
     }
 
     @Public()
