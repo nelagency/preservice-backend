@@ -48,8 +48,13 @@ function coerceExpires(raw: string | number | undefined, fallback: number | Stri
       },
     }),
     MongooseModule.forRoot((process.env.MONGO_URI)!, {
-      serverSelectionTimeoutMS: 2000,
-      maxPoolSize: 5
+      serverSelectionTimeoutMS: 10000,
+      connectTimeoutMS: 10000,
+      socketTimeoutMS: 45000,
+      maxPoolSize: 10,
+      minPoolSize: 1,
+      retryWrites: true,
+      retryReads: true,
     }),
     AuthModule,
     EventsModule,
