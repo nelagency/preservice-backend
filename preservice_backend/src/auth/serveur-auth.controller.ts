@@ -75,7 +75,7 @@ export class ServeurAuthController {
         const result = await this.auth.login(dto.email, dto.mot_passe, meta);
         // si tu veux poser un cookie httpOnly 'rt' :
         // this.setRefreshCookie(res, result.refresh_token, result.refresh_expires_at);
-        return result;
+        return { ...result, redirectTo: '/serveur' };
     }
 
     @Get('me')

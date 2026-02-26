@@ -125,7 +125,7 @@ export class AuthController {
 
         this.setRefreshCookie(res, result.refresh_token, result.refresh_expires_at);
 
-        return result;
+        return { ...result, redirectTo: '/dashboard' };
     }
 
     @Public()
@@ -166,7 +166,7 @@ export class AuthController {
 
         const result = await this.auth.register(payload as any, meta);
         this.setRefreshCookie(res, result.refresh_token, result.refresh_expires_at);
-        return result;
+        return { ...result, redirectTo: '/dashboard' };
     }
 
     @ApiBearerAuth()

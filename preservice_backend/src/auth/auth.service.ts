@@ -21,6 +21,7 @@ export class AuthService {
             sub: user.id?.toString() ?? user._id?.toString(),
             email: user.email,
             role: user.role,
+            realm: 'user',
             nom: user.nom,
             isActive: user.isActive,
         };
