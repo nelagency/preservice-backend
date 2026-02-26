@@ -122,10 +122,11 @@ export class AuthController {
     async login(@Body() dto: LoginDto, @Req() req: any, @Res({ passthrough: true }) res: Response) {
         const meta = { ua: req.headers['user-agent'], ip: req.ip };
         const result = await this.auth.login(dto.email, dto.mot_passe, meta);
+        const frontendBase = (this.configService.get<string>('FRONTEND_BASE_URL') || 'https://dashboard.nelagency.com').replace(/\/$/, '');
 
         this.setRefreshCookie(res, result.refresh_token, result.refresh_expires_at);
 
-        return { ...result, redirectTo: '/dashboard' };
+        return { ...result, redirectTo: `${frontendBase}/dashboard` };
     }
 
     @Public()
@@ -165,8 +166,9 @@ export class AuthController {
         };
 
         const result = await this.auth.register(payload as any, meta);
+        const frontendBase = (this.configService.get<string>('FRONTEND_BASE_URL') || 'https://dashboard.nelagency.com').replace(/\/$/, '');
         this.setRefreshCookie(res, result.refresh_token, result.refresh_expires_at);
-        return { ...result, redirectTo: '/dashboard' };
+        return { ...result, redirectTo: `${frontendBase}/dashboard` };
     }
 
     @ApiBearerAuth()

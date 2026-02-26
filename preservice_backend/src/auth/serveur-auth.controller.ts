@@ -3,6 +3,7 @@ import { ApiBearerAuth, ApiBody, ApiOkResponse, ApiOperation, ApiResponse, ApiTa
 import type { Response } from 'express';
 import { IsEmail, IsString, MinLength } from 'class-validator';
 import { ServeurAuthService } from './serveur-auth.service';
+import { ConfigService } from '@nestjs/config';
 // (optionnel mais propre) un guard qui garantit realm=serveur
 // import { UseGuards } from '@nestjs/common';
 // import { JwtAuthGuard } from '../auth/jwt-auth.guard';
@@ -33,7 +34,10 @@ class ServeurLoginResp {
 @ApiTags('Auth Serveur')
 @Controller('auth-serveur')
 export class ServeurAuthController {
-    constructor(private readonly auth: ServeurAuthService) { }
+    constructor(
+        private readonly auth: ServeurAuthService,
+        private readonly configService: ConfigService,
+    ) { }
 
     @Public()
     @Post('login')
@@ -73,9 +77,10 @@ export class ServeurAuthController {
     async login(@Body() dto: ServeurLoginDto, @Req() req: any, @Res({ passthrough: true }) res: Response) {
         const meta = { ua: req.headers['user-agent'], ip: req.ip };
         const result = await this.auth.login(dto.email, dto.mot_passe, meta);
+        const frontendBase = (this.configService.get<string>('FRONTEND_BASE_URL') || 'https://dashboard.nelagency.com').replace(/\/$/, '');
         // si tu veux poser un cookie httpOnly 'rt' :
         // this.setRefreshCookie(res, result.refresh_token, result.refresh_expires_at);
-        return { ...result, redirectTo: '/serveur' };
+        return { ...result, redirectTo: `${frontendBase}/serveur` };
     }
 
     @Get('me')
