@@ -23,10 +23,13 @@ export async function runCronMaintenance() {
   const revokedCutoff = new Date(nowMs - revokedRetentionDays * 24 * 60 * 60 * 1000);
   const blacklistCutoff = new Date(nowMs - blacklistRetentionDays * 24 * 60 * 60 * 1000);
 
-  await mongoose.connect(uri, {
-    serverSelectionTimeoutMS: 10000,
-    maxPoolSize: 5,
-  });
+  const wasDisconnected = mongoose.connection.readyState === 0;
+  if (wasDisconnected) {
+    await mongoose.connect(uri, {
+      serverSelectionTimeoutMS: 10000,
+      maxPoolSize: 5,
+    });
+  }
 
   try {
     const RefreshTokenModel =
@@ -54,7 +57,11 @@ export async function runCronMaintenance() {
       at: new Date().toISOString(),
     };
   } finally {
-    await mongoose.disconnect();
+    // Important: avoid disconnecting the app-wide mongoose connection when this
+    // function is called from the HTTP endpoint in the running API process.
+    if (wasDisconnected) {
+      await mongoose.disconnect();
+    }
   }
 }
 
