@@ -1,7 +1,8 @@
-import { Controller, Get, HttpCode, HttpStatus } from '@nestjs/common';
+import { Controller, Get, HttpCode, HttpStatus, Query, UnauthorizedException } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiOkResponse, ApiExcludeController } from '@nestjs/swagger';
 import { AppService } from './app.service';
 import { Public } from './common/decorators/public.decorator';
+import { runCronMaintenance } from './scripts/cron-maintenance';
 
 @ApiExcludeController() // Masque tout le contrôleur dans Swagger
 @ApiTags('System')
@@ -33,5 +34,16 @@ export class AppController {
   @ApiOkResponse({ description: 'Service en ligne.' })
   health() {
     return { ok: true, ts: Date.now() };
+  }
+
+  @Public()
+  @Get('cron/maintenance')
+  @HttpCode(HttpStatus.OK)
+  async cronMaintenance(@Query('key') key?: string) {
+    const expectedKey = process.env.CRON_SECRET;
+    if (!expectedKey || key !== expectedKey) {
+      throw new UnauthorizedException('Invalid cron key');
+    }
+    return runCronMaintenance();
   }
 }
