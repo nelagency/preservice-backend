@@ -24,6 +24,10 @@ import type { StringValue } from 'ms';
 import { NotificationsModule } from './notifications/notifications.module';
 import { MediaModule } from './media/media.module';
 import { Connection } from 'mongoose';
+import { InstagramModule } from './instagram/instagram.module';
+import { ContactModule } from './contact/contact.module';
+import { ServicesContentModule } from './services-content/services-content.module';
+import { AboutContentModule } from './about-content/about-content.module';
 
 function coerceExpires(raw: string | number | undefined, fallback: number | StringValue): number | StringValue {
   if (raw === undefined || raw === null || raw === '') return fallback;
@@ -99,7 +103,11 @@ const mongoLog = new Logger('MongoDB');
     StatsModule,
     TimesheetsModule,
     NotificationsModule,
-    MediaModule
+    MediaModule,
+    InstagramModule,
+    ContactModule,
+    ServicesContentModule,
+    AboutContentModule
   ],
   controllers: [AppController],
   providers: [
