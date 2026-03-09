@@ -1,6 +1,5 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
-import { AssignDto, BulkAssignDto, CreateParticipationDto } from './dto/create-participation.dto';
-import { UpdateParticipationDto } from './dto/update-participation.dto';
+import { AssignDto, BulkAssignDto } from './dto/create-participation.dto';
 import { InjectModel } from '@nestjs/mongoose';
 import { EventDocument, EventRoleEnum } from 'src/events/entities/event.entity';
 import { Model, Types } from 'mongoose';
@@ -305,26 +304,4 @@ export class ParticipationService {
       .lean()
   }
 
-  create(createParticipationDto: CreateParticipationDto) {
-    return 'This action adds a new participation';
-  }
-
-  findAll() {
-    return this.model.find().populate('serveur', 'event');
-  }
-
-  findOne(id: number) {
-    return this.model.findById(id).populate('serveur', 'event');
-  }
-
-  update(id: number, updateParticipationDto: UpdateParticipationDto) {
-    return `This action updates a #${id} participation`;
-  }
-
-  async remove(id: string) {
-    if (!Types.ObjectId.isValid(id)) throw new BadRequestException('id invalide');
-    const doc = await this.model.findByIdAndDelete(id);
-    if (!doc) throw new NotFoundException('Participation not found');
-    return { ok: true };
-  }
 }

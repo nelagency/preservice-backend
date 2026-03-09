@@ -65,7 +65,6 @@ export class ServeurController {
     operationId: 'serveursStatusesMeta',
   })
   @ApiOkResponse({ description: 'Énum des statuts de serveur (key/value).' })
-  @Roles('admin', 'superadmin')
   serveurStatusesKV() {
     return this.serveurService.serveurStatusesKV();
   }

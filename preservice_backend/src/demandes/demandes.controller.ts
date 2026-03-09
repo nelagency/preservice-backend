@@ -62,7 +62,7 @@ export class DemandesController {
   typesKV() { return this.demandesService.typesKV(); }
 
   @Public()
-  @Get('meta/types')
+  @Get('meta/statuses')
   @ApiOperation({
     summary: 'Statuts de demande',
     description: 'Retourne les statuts possibles de demande sous forme { key, value }.',

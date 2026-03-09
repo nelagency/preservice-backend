@@ -66,6 +66,8 @@ function getRefreshFromReq(req: any): string | null {
     // cookie "rt" OU header Authorization: Refresh <token>
     const rt = req?.cookies?.rt;
     if (rt) return rt;
+    const bodyToken = req?.body?.refresh_token ?? req?.body?.refreshToken;
+    if (typeof bodyToken === 'string' && bodyToken.trim()) return bodyToken.trim();
     const h = req?.headers?.authorization || '';
     const [type, token] = h.split(' ');
     return type?.toLowerCase() === 'refresh' && token ? token : null;
@@ -92,8 +94,8 @@ export class AuthController {
 
     // Petit helper pour poser correctement le cookie (cf. plus bas implémentation finale)
     private setRefreshCookie(res: Response, token: string, expiresAt: Date) {
-        const secure = String(this.configService.get('auth.cookieSecure')).toLowerCase() === 'true';
-        const domain = this.configService.get('auth.cookieDomain') || undefined;
+        const secure = String(this.configService.get('cookies.cookieSecure')).toLowerCase() === 'true';
+        const domain = this.configService.get('cookies.cookieDomain') || undefined;
         res.cookie('rt', token, {
             httpOnly: true,
             secure,
@@ -105,8 +107,8 @@ export class AuthController {
     }
 
     private clearRefreshCookie(res: Response) {
-        const secure = String(this.configService.get('auth.cookieSecure')).toLowerCase() === 'true';
-        const domain = this.configService.get('auth.cookieDomain') || undefined;
+        const secure = String(this.configService.get('cookies.cookieSecure')).toLowerCase() === 'true';
+        const domain = this.configService.get('cookies.cookieDomain') || undefined;
         res.clearCookie('rt', {
             httpOnly: true,
             secure,
@@ -168,6 +170,9 @@ export class AuthController {
         if (!numero_tel || typeof numero_tel !== 'string') {
             throw new BadRequestException('numero_tel must be a string');
         }
+        if (role && role !== UserRole.user) {
+            throw new BadRequestException('Public register cannot set admin or superadmin role');
+        }
 
         const payload = {
             nom: dto.nom,
@@ -175,7 +180,7 @@ export class AuthController {
             numero_tel,
             adresse: dto.adresse,
             mot_passe,
-            role: role ?? UserRole.user,
+            role: UserRole.user,
         };
 
         const result = await this.auth.register(payload as any, meta);
@@ -200,7 +205,7 @@ export class AuthController {
     @ApiOperation({ summary: 'Renouvellement du token', operationId: 'authRefresh' })
     async refresh(@Req() req: any, @Res({ passthrough: true }) res: Response) {
         const old = getRefreshFromReq(req);
-        if (!old) return { error: 'Refresh token manquant' };
+        if (!old) throw new UnauthorizedException('Refresh token manquant');
 
         const meta = { ua: req.headers['user-agent'], ip: req.ip };
         const { access_token, user, refresh_token, refresh_expires_at } = await this.auth.refresh(old, req?.user?.sub, meta);

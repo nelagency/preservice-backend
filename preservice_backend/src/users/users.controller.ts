@@ -67,7 +67,6 @@ export class UsersController {
   @ApiOkResponse({ description: 'Rôles disponibles.' })
   rolesKV() { return this.usersService.rolesKV(); }
 
-  @Public()
   @Get(':id')
   @ApiOperation({
     summary: "Détail d'un utilisateur",
@@ -80,7 +79,6 @@ export class UsersController {
     return this.usersService.findOne(id);
   }
 
-  @Public()
   @Patch(':id')
   @ApiOperation({
     summary: "Mise à jour d'un utilisateur",
@@ -101,6 +99,7 @@ export class UsersController {
     }
   })
   @ApiOkResponse({ description: 'Utilisateur mis à jour.' })
+  @Roles('admin', 'superadmin')
   update(@Param('id') id: string, @Body() updateUserDto: UpdateUserDto) {
     return this.usersService.update(id, updateUserDto);
   }

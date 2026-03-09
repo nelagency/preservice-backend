@@ -35,12 +35,23 @@ export class StatsService {
         };
     }
 
+    private eventDateExpr() {
+        return {
+            $ifNull: [
+                '$startdate',
+                { $ifNull: ['$date', '$createdAt'] },
+            ],
+        };
+    }
+
     async overview(): Promise<OverviewDto> {
         const now = new Date();
 
         // 1) KPIs
         const [eventsTotal, requestWaiting, avgRatingDoc] = await Promise.all([
-            this.events.countDocuments({ date: { $gte: now } }),
+            this.events.countDocuments({
+                $expr: { $gte: [this.eventDateExpr(), now] },
+            } as any),
             this.demandes.countDocuments({ status: DemandeStatusEnum.en_attente }),
             this.avis.aggregate([{ $group: { _id: null, avg: { $avg: '$note' } } }]),
         ]);
@@ -51,7 +62,17 @@ export class StatsService {
         const activeAgg = await this.parts.aggregate([
             { $lookup: { from: 'events', localField: 'event', foreignField: '_id', as: 'ev' } },
             { $unwind: '$ev' },
-            { $match: { 'ev.date': { $gte: now }, assignmentStatus: { $in: [AssignmentStatus.provisional, AssignmentStatus.confirmed] } } },
+            {
+                $match: {
+                    assignmentStatus: { $in: [AssignmentStatus.provisional, AssignmentStatus.confirmed] },
+                    $expr: {
+                        $gte: [
+                            { $ifNull: ['$ev.startdate', { $ifNull: ['$ev.date', '$ev.createdAt'] }] },
+                            now,
+                        ],
+                    },
+                },
+            },
             { $group: { _id: '$serveur' } },
             { $count: 'n' },
         ]);
@@ -61,7 +82,16 @@ export class StatsService {
         const monthStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
         const monthEnd = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 1));
         const revenueAgg = await this.events.aggregate([
-            { $match: { date: { $gte: monthStart, $lt: monthEnd } } },
+            {
+                $match: {
+                    $expr: {
+                        $and: [
+                            { $gte: [this.eventDateExpr(), monthStart] },
+                            { $lt: [this.eventDateExpr(), monthEnd] },
+                        ],
+                    },
+                },
+            },
             { $project: { r: this.revenueExpr() } },
             { $group: { _id: null, sum: { $sum: '$r' } } },
         ]);
@@ -69,8 +99,8 @@ export class StatsService {
 
         // 2) Événements récents (3 plus proches à venir)
         const recentEv = await this.events
-            .find({ date: { $gte: now } })
-            .sort({ date: 1 })
+            .find()
+            .sort({ createdAt: -1 })
             .limit(3)
             .lean();
 
@@ -95,11 +125,20 @@ export class StatsService {
         // 4) Revenus mensuels (12 derniers mois)
         const oneYearAgo = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - 11, 1));
         const revMonthly = await this.events.aggregate([
-            { $match: { date: { $gte: oneYearAgo, $lt: monthEnd } } },
+            {
+                $match: {
+                    $expr: {
+                        $and: [
+                            { $gte: [this.eventDateExpr(), oneYearAgo] },
+                            { $lt: [this.eventDateExpr(), monthEnd] },
+                        ],
+                    },
+                },
+            },
             {
                 $project: {
                     ym: {
-                        $dateToString: { format: '%Y-%m', date: '$date' }
+                        $dateToString: { format: '%Y-%m', date: this.eventDateExpr() }
                     },
                     r: this.revenueExpr(),
                 }
