@@ -1,6 +1,26 @@
-import { BadRequestException, Body, Controller, Get, HttpCode, HttpStatus, Post, Req, Res, UnauthorizedException } from '@nestjs/common';
-import { ApiBearerAuth, ApiBody, ApiCreatedResponse, ApiOkResponse, ApiOperation, ApiProperty, ApiTags, ApiUnauthorizedResponse } from '@nestjs/swagger';
-import type { Response } from 'express';
+import {
+  BadRequestException,
+  Body,
+  Controller,
+  Get,
+  HttpCode,
+  HttpStatus,
+  Post,
+  Req,
+  Res,
+  UnauthorizedException,
+} from '@nestjs/common';
+import {
+  ApiBearerAuth,
+  ApiBody,
+  ApiCreatedResponse,
+  ApiOkResponse,
+  ApiOperation,
+  ApiProperty,
+  ApiTags,
+  ApiUnauthorizedResponse,
+} from '@nestjs/swagger';
+import type { Request, Response } from 'express';
 import { AuthService } from './auth.service';
 import { Public } from '../common/decorators/public.decorator';
 import { IsEmail, IsOptional, IsString, MinLength } from 'class-validator';
@@ -10,260 +30,358 @@ import { ConfigService } from '@nestjs/config';
 import { UserRole } from 'src/users/entities/user.entity';
 
 class LoginDto {
-    @ApiProperty() @IsEmail()
-    email: string;
+  @ApiProperty()
+  @IsEmail()
+  email: string;
 
-    @ApiProperty() @IsString() @MinLength(6)
-    mot_passe: string;
+  @ApiProperty()
+  @IsString()
+  @MinLength(6)
+  mot_passe: string;
 }
 
 class RegisterDto {
-    @ApiProperty() @IsString()
-    nom: string;
+  @ApiProperty()
+  @IsString()
+  nom: string;
 
-    @ApiProperty() @IsEmail()
-    email: string;
+  @ApiProperty()
+  @IsEmail()
+  email: string;
 
-    @ApiProperty() @IsOptional() @IsString()
-    numero_tel?: string;
+  @ApiProperty()
+  @IsOptional()
+  @IsString()
+  numero_tel?: string;
 
-    @ApiProperty() @IsOptional() @IsString() @MinLength(6)
-    mot_passe?: string;
+  @ApiProperty()
+  @IsOptional()
+  @IsString()
+  @MinLength(6)
+  mot_passe?: string;
 
-    @ApiProperty() @IsOptional() @IsString() @MinLength(6)
-    mot_de_passe?: string;
+  @ApiProperty()
+  @IsOptional()
+  @IsString()
+  @MinLength(6)
+  mot_de_passe?: string;
 
-    @ApiProperty() @IsOptional() @IsString()
-    adresse?: string;
+  @ApiProperty()
+  @IsOptional()
+  @IsString()
+  adresse?: string;
 
-    @ApiProperty() @IsOptional() @IsString()
-    role?: string;
+  @ApiProperty()
+  @IsOptional()
+  @IsString()
+  role?: string;
 
-    @ApiProperty() @IsOptional() @IsString()
-    telephone?: string;
+  @ApiProperty()
+  @IsOptional()
+  @IsString()
+  telephone?: string;
 }
 
 class ForgotPasswordDto {
-    @ApiProperty() @IsEmail()
-    email: string;
+  @ApiProperty()
+  @IsEmail()
+  email: string;
 }
 
 class ResetPasswordDto {
-    @ApiProperty() @IsString()
-    token: string;
+  @ApiProperty()
+  @IsString()
+  token: string;
 
-    @ApiProperty() @IsString() @MinLength(6)
-    new_password: string;
+  @ApiProperty()
+  @IsString()
+  @MinLength(6)
+  new_password: string;
 }
 
-function getBearer(req: any): string | null {
-    const h = req?.headers?.authorization || '';
-    const [type, token] = h.split(' ');
-    return type?.toLowerCase() === 'bearer' && token ? token : null;
+type AuthReqUser = {
+  sub?: string;
+  exp?: number;
+  realm?: 'user' | 'serveur';
+};
+type AuthRequest = Request & { user?: AuthReqUser };
+
+function getBearer(req: Request): string | null {
+  const h = req.headers.authorization || '';
+  const [type, token] = h.split(' ');
+  return type?.toLowerCase() === 'bearer' && token ? token : null;
 }
 
-function getRefreshFromReq(req: any): string | null {
-    // cookie "rt" OU header Authorization: Refresh <token>
-    const rt = req?.cookies?.rt;
-    if (rt) return rt;
-    const bodyToken = req?.body?.refresh_token ?? req?.body?.refreshToken;
-    if (typeof bodyToken === 'string' && bodyToken.trim()) return bodyToken.trim();
-    const h = req?.headers?.authorization || '';
-    const [type, token] = h.split(' ');
-    return type?.toLowerCase() === 'refresh' && token ? token : null;
+function getRefreshFromReq(req: Request): string | null {
+  // cookie "rt" OU header Authorization: Refresh <token>
+  const rtCookie = req.cookies as { rt?: string } | undefined;
+  const rt = rtCookie?.rt;
+  if (rt) return rt;
+  const body = req.body as
+    | { refresh_token?: string; refreshToken?: string }
+    | undefined;
+  const bodyToken = body?.refresh_token ?? body?.refreshToken;
+  if (typeof bodyToken === 'string' && bodyToken.trim())
+    return bodyToken.trim();
+  const h = req.headers.authorization || '';
+  const [type, token] = h.split(' ');
+  return type?.toLowerCase() === 'refresh' && token ? token : null;
 }
 
 function normalizeRole(input?: string): UserRole | undefined {
-    if (!input) return undefined;
-    const role = input.trim().toLowerCase();
-    if (role === 'client' || role === 'utilisateur' || role === 'user') return UserRole.user;
-    if (role === 'admin') return UserRole.admin;
-    if (role === 'superadmin' || role === 'super-admin') return UserRole.superadmin;
-    return undefined;
+  if (!input) return undefined;
+  const role = input.trim().toLowerCase();
+  if (role === 'client' || role === 'utilisateur' || role === 'user')
+    return UserRole.user;
+  if (role === 'admin') return UserRole.admin;
+  if (role === 'superadmin' || role === 'super-admin')
+    return UserRole.superadmin;
+  return undefined;
 }
 
 @ApiTags('Auth')
 @Controller('auth')
 export class AuthController {
-    constructor(
-        private readonly configService: ConfigService,
-        private readonly auth: AuthService,
-        private readonly blacklist: TokenBlacklistService,
-        private readonly rts: RefreshTokensService,
-    ) { }
+  constructor(
+    private readonly configService: ConfigService,
+    private readonly auth: AuthService,
+    private readonly blacklist: TokenBlacklistService,
+    private readonly rts: RefreshTokensService,
+  ) {}
 
-    // Petit helper pour poser correctement le cookie (cf. plus bas implémentation finale)
-    private setRefreshCookie(res: Response, token: string, expiresAt: Date) {
-        const secure = String(this.configService.get('cookies.cookieSecure')).toLowerCase() === 'true';
-        const domain = this.configService.get('cookies.cookieDomain') || undefined;
-        res.cookie('rt', token, {
-            httpOnly: true,
-            secure,
-            sameSite: secure ? 'none' : 'lax',
-            domain,
-            path: '/api/auth',
-            expires: expiresAt,
-        });
+  // Petit helper pour poser correctement le cookie (cf. plus bas implémentation finale)
+  private setRefreshCookie(res: Response, token: string, expiresAt: Date) {
+    const secure =
+      String(this.configService.get('cookies.cookieSecure')).toLowerCase() ===
+      'true';
+    const domain =
+      this.configService.get<string>('cookies.cookieDomain') || undefined;
+    res.cookie('rt', token, {
+      httpOnly: true,
+      secure,
+      sameSite: secure ? 'none' : 'lax',
+      domain,
+      path: '/api/auth',
+      expires: expiresAt,
+    });
+  }
+
+  private clearRefreshCookie(res: Response) {
+    const secure =
+      String(this.configService.get('cookies.cookieSecure')).toLowerCase() ===
+      'true';
+    const domain =
+      this.configService.get<string>('cookies.cookieDomain') || undefined;
+    res.clearCookie('rt', {
+      httpOnly: true,
+      secure,
+      sameSite: secure ? 'none' : 'lax',
+      domain,
+      path: '/api/auth',
+    });
+  }
+
+  @Public()
+  @Post('login')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: "Connexion d'un utilisateur",
+    description: 'Authentifie l’utilisateur et retourne un jeton JWT.',
+    operationId: 'authLogin',
+  })
+  @ApiBody({
+    type: LoginDto,
+    examples: {
+      default: {
+        value: { email: 'ali.bensalem@example.com', mot_passe: 'Passw0rd!' },
+      },
+    },
+  })
+  @ApiOkResponse({ description: 'Authentification réussie (JWT retourné).' })
+  @ApiUnauthorizedResponse({
+    description: 'Identifiants invalides ou compte inactif.',
+  })
+  async login(
+    @Body() dto: LoginDto,
+    @Req() req: AuthRequest,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    const meta = { ua: req.headers['user-agent'], ip: req.ip };
+    const result = await this.auth.login(dto.email, dto.mot_passe, meta);
+    const frontendBase = (
+      this.configService.get<string>('FRONTEND_BASE_URL') ||
+      'https://dashboard.nelagency.com'
+    ).replace(/\/$/, '');
+
+    this.setRefreshCookie(res, result.refresh_token, result.refresh_expires_at);
+
+    return { ...result, redirectTo: `${frontendBase}/dashboard` };
+  }
+
+  @Public()
+  @Post('register')
+  @ApiOperation({
+    summary: "Inscription d'un utilisateur",
+    description: 'Crée un nouvel utilisateur et renvoie un JWT.',
+    operationId: 'authRegister',
+  })
+  @ApiBody({
+    type: RegisterDto,
+    examples: {
+      default: {
+        value: {
+          nom: 'Nadia Test',
+          email: 'nadia@example.com',
+          numero_tel: '+21620000099',
+          mot_passe: 'Passw0rd!',
+        },
+      },
+    },
+  })
+  @ApiCreatedResponse({
+    description: 'Utilisateur créé et connecté (JWT retourné).',
+  })
+  async register(
+    @Body() dto: RegisterDto,
+    @Req() req: AuthRequest,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    const meta = { ua: req.headers['user-agent'], ip: req.ip };
+    const mot_passe = dto.mot_passe ?? dto.mot_de_passe;
+    const numero_tel = dto.numero_tel ?? dto.telephone;
+    const role = normalizeRole(dto.role);
+
+    if (!mot_passe || mot_passe.length < 6) {
+      throw new BadRequestException(
+        'mot_passe must be a string with minimum length of 6',
+      );
+    }
+    if (!numero_tel || typeof numero_tel !== 'string') {
+      throw new BadRequestException('numero_tel must be a string');
+    }
+    if (role && role !== UserRole.user) {
+      throw new BadRequestException(
+        'Public register cannot set admin or superadmin role',
+      );
     }
 
-    private clearRefreshCookie(res: Response) {
-        const secure = String(this.configService.get('cookies.cookieSecure')).toLowerCase() === 'true';
-        const domain = this.configService.get('cookies.cookieDomain') || undefined;
-        res.clearCookie('rt', {
-            httpOnly: true,
-            secure,
-            sameSite: secure ? 'none' : 'lax',
-            domain,
-            path: '/api/auth',
-        });
+    const payload = {
+      nom: dto.nom,
+      email: dto.email,
+      numero_tel,
+      adresse: dto.adresse,
+      mot_passe,
+      role: UserRole.user,
+    };
+
+    const result = await this.auth.register(payload, meta);
+    const frontendBase = (
+      this.configService.get<string>('FRONTEND_BASE_URL') ||
+      'https://dashboard.nelagency.com'
+    ).replace(/\/$/, '');
+    this.setRefreshCookie(res, result.refresh_token, result.refresh_expires_at);
+    return { ...result, redirectTo: `${frontendBase}/dashboard` };
+  }
+
+  @ApiBearerAuth()
+  @Get('me')
+  @ApiOperation({
+    summary: 'Profil de l’utilisateur connecté',
+    description: 'Retourne le payload du JWT (sub, email, role, etc.).',
+    operationId: 'authMe',
+  })
+  @ApiOkResponse({ description: 'Profil récupéré.' })
+  me(@Req() req: AuthRequest) {
+    return req.user;
+  }
+
+  @Public()
+  @Post('refresh')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Renouvellement du token',
+    operationId: 'authRefresh',
+  })
+  async refresh(
+    @Req() req: AuthRequest,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    const old = getRefreshFromReq(req);
+    if (!old) throw new UnauthorizedException('Refresh token manquant');
+
+    const meta = { ua: req.headers['user-agent'], ip: req.ip };
+    const { access_token, user, refresh_token, refresh_expires_at } =
+      await this.auth.refresh(old, req.user?.sub, meta);
+
+    // pose le nouveau cookie et efface l’ancien (rotation)
+    this.setRefreshCookie(res, refresh_token, refresh_expires_at);
+    return { user, access_token, refresh_token, refresh_expires_at };
+  }
+
+  @Public()
+  @Post('forgot-password')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Demande de reinitialisation mot de passe',
+    operationId: 'authForgotPassword',
+  })
+  async forgotPassword(@Body() dto: ForgotPasswordDto) {
+    return this.auth.requestPasswordReset(dto.email);
+  }
+
+  @Public()
+  @Post('reset-password')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Reinitialisation mot de passe par token',
+    operationId: 'authResetPassword',
+  })
+  async resetPassword(@Body() dto: ResetPasswordDto) {
+    return this.auth.resetPassword(dto.token, dto.new_password);
+  }
+
+  @Public()
+  @ApiBearerAuth()
+  @Post('logout')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Déconnexion', operationId: 'authLogout' })
+  async logout(
+    @Req() req: AuthRequest,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    const token = getBearer(req);
+    const exp = req.user?.exp;
+
+    const sub = req.user?.sub;
+
+    // Blacklist l'access token (comme déjà fait avant)
+    if (token && exp) {
+      await this.blacklist.add(token, sub ?? null, exp);
     }
 
-    @Public()
-    @Post('login')
-    @HttpCode(HttpStatus.OK)
-    @ApiOperation({
-        summary: "Connexion d'un utilisateur",
-        description: "Authentifie l’utilisateur et retourne un jeton JWT.",
-        operationId: 'authLogin',
-    })
-    @ApiBody({
-        type: LoginDto,
-        examples: {
-            default: { value: { email: 'ali.bensalem@example.com', mot_passe: 'Passw0rd!' } }
-        }
-    })
-    @ApiOkResponse({ description: 'Authentification réussie (JWT retourné).' })
-    @ApiUnauthorizedResponse({ description: 'Identifiants invalides ou compte inactif.' })
-    async login(@Body() dto: LoginDto, @Req() req: any, @Res({ passthrough: true }) res: Response) {
-        const meta = { ua: req.headers['user-agent'], ip: req.ip };
-        const result = await this.auth.login(dto.email, dto.mot_passe, meta);
-        const frontendBase = (this.configService.get<string>('FRONTEND_BASE_URL') || 'https://dashboard.nelagency.com').replace(/\/$/, '');
+    // Révoque le refresh courant (si dispo) et efface le cookie
+    const rt = getRefreshFromReq(req);
+    if (rt) await this.rts.revoke(rt);
+    this.clearRefreshCookie(res);
 
-        this.setRefreshCookie(res, result.refresh_token, result.refresh_expires_at);
+    return { success: true };
+  }
 
-        return { ...result, redirectTo: `${frontendBase}/dashboard` };
-    }
+  @ApiBearerAuth()
+  @Post('logout-all')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Déconnexion de tous les appareils',
+    operationId: 'authLogoutAll',
+  })
+  async logoutAll(
+    @Req() req: AuthRequest,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    const sub = req.user?.sub;
+    if (sub) await this.rts.revokeAllForUser(sub);
+    this.clearRefreshCookie(res);
 
-    @Public()
-    @Post('register')
-    @ApiOperation({
-        summary: "Inscription d'un utilisateur",
-        description: "Crée un nouvel utilisateur et renvoie un JWT.",
-        operationId: 'authRegister',
-    })
-    @ApiBody({
-        type: RegisterDto,
-        examples: {
-            default: { value: { nom: 'Nadia Test', email: 'nadia@example.com', numero_tel: '+21620000099', mot_passe: 'Passw0rd!' } }
-        }
-    })
-    @ApiCreatedResponse({ description: 'Utilisateur créé et connecté (JWT retourné).' })
-    async register(@Body() dto: RegisterDto, @Req() req: any, @Res({ passthrough: true }) res: Response) {
-        const meta = { ua: req.headers['user-agent'], ip: req.ip };
-        const mot_passe = dto.mot_passe ?? dto.mot_de_passe;
-        const numero_tel = dto.numero_tel ?? dto.telephone;
-        const role = normalizeRole(dto.role);
-
-        if (!mot_passe || mot_passe.length < 6) {
-            throw new BadRequestException('mot_passe must be a string with minimum length of 6');
-        }
-        if (!numero_tel || typeof numero_tel !== 'string') {
-            throw new BadRequestException('numero_tel must be a string');
-        }
-        if (role && role !== UserRole.user) {
-            throw new BadRequestException('Public register cannot set admin or superadmin role');
-        }
-
-        const payload = {
-            nom: dto.nom,
-            email: dto.email,
-            numero_tel,
-            adresse: dto.adresse,
-            mot_passe,
-            role: UserRole.user,
-        };
-
-        const result = await this.auth.register(payload as any, meta);
-        const frontendBase = (this.configService.get<string>('FRONTEND_BASE_URL') || 'https://dashboard.nelagency.com').replace(/\/$/, '');
-        this.setRefreshCookie(res, result.refresh_token, result.refresh_expires_at);
-        return { ...result, redirectTo: `${frontendBase}/dashboard` };
-    }
-
-    @ApiBearerAuth()
-    @Get('me')
-    @ApiOperation({
-        summary: 'Profil de l’utilisateur connecté',
-        description: 'Retourne le payload du JWT (sub, email, role, etc.).',
-        operationId: 'authMe',
-    })
-    @ApiOkResponse({ description: 'Profil récupéré.' })
-    me(@Req() req: any) { return req.user; }
-
-    @Public()
-    @Post('refresh')
-    @HttpCode(HttpStatus.OK)
-    @ApiOperation({ summary: 'Renouvellement du token', operationId: 'authRefresh' })
-    async refresh(@Req() req: any, @Res({ passthrough: true }) res: Response) {
-        const old = getRefreshFromReq(req);
-        if (!old) throw new UnauthorizedException('Refresh token manquant');
-
-        const meta = { ua: req.headers['user-agent'], ip: req.ip };
-        const { access_token, user, refresh_token, refresh_expires_at } = await this.auth.refresh(old, req?.user?.sub, meta);
-
-        // pose le nouveau cookie et efface l’ancien (rotation)
-        this.setRefreshCookie(res, refresh_token, refresh_expires_at);
-        return { user, access_token, refresh_token, refresh_expires_at };
-    }
-
-    @Public()
-    @Post('forgot-password')
-    @HttpCode(HttpStatus.OK)
-    @ApiOperation({ summary: 'Demande de reinitialisation mot de passe', operationId: 'authForgotPassword' })
-    async forgotPassword(@Body() dto: ForgotPasswordDto) {
-        return this.auth.requestPasswordReset(dto.email);
-    }
-
-    @Public()
-    @Post('reset-password')
-    @HttpCode(HttpStatus.OK)
-    @ApiOperation({ summary: 'Reinitialisation mot de passe par token', operationId: 'authResetPassword' })
-    async resetPassword(@Body() dto: ResetPasswordDto) {
-        return this.auth.resetPassword(dto.token, dto.new_password);
-    }
-
-    @Public()
-    @ApiBearerAuth()
-    @Post('logout')
-    @HttpCode(HttpStatus.OK)
-    @ApiOperation({ summary: 'Déconnexion', operationId: 'authLogout' })
-    async logout(@Req() req: any, @Res({ passthrough: true }) res: Response) {
-        const token = getBearer(req);
-        const exp = req?.user?.exp;
-
-        const sub = req?.user?.sub;
-
-        // Blacklist l'access token (comme déjà fait avant)
-        if (token && exp) {
-            await this.blacklist.add(token, sub ?? null, exp);
-        }
-
-        // Révoque le refresh courant (si dispo) et efface le cookie
-        const rt = getRefreshFromReq(req);
-        if (rt) await this.rts.revoke(rt);
-        this.clearRefreshCookie(res);
-
-        return { success: true };
-    }
-
-    @ApiBearerAuth()
-    @Post('logout-all')
-    @HttpCode(HttpStatus.OK)
-    @ApiOperation({ summary: 'Déconnexion de tous les appareils', operationId: 'authLogoutAll' })
-    async logoutAll(@Req() req: any, @Res({ passthrough: true }) res: Response) {
-        const sub = req?.user?.sub;
-        if (sub) await this.rts.revokeAllForUser(sub);
-        this.clearRefreshCookie(res);
-
-        return { success: true };
-    }
+    return { success: true };
+  }
 }

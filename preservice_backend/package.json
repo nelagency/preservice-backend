@@ -19,7 +19,8 @@
     "test:cov": "jest --coverage",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
     "test:e2e": "jest --config ./test/jest-e2e.json",
-    "seed:users": "ts-node src/scripts/seed-users.ts"
+    "seed:users": "ts-node src/scripts/seed-users.ts",
+    "cron:maintenance": "node dist/src/scripts/cron-maintenance.js"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.922.0",
@@ -61,6 +62,7 @@
     "@types/jest": "^30.0.0",
     "@types/node": "^22.19.0",
     "@types/nodemailer": "^7.0.3",
+    "@types/passport-jwt": "^4.0.1",
     "@types/supertest": "^6.0.2",
     "eslint": "^9.18.0",
     "eslint-config-prettier": "^10.0.1",
@@ -96,4 +98,3 @@
     "testEnvironment": "node"
   }
 }
-

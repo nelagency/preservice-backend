@@ -1,6 +1,19 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
 import {
-  ApiBearerAuth, ApiTags, ApiOperation, ApiOkResponse, ApiCreatedResponse, ApiBody
+  Controller,
+  Get,
+  Post,
+  Body,
+  Patch,
+  Param,
+  Delete,
+} from '@nestjs/common';
+import {
+  ApiBearerAuth,
+  ApiTags,
+  ApiOperation,
+  ApiOkResponse,
+  ApiCreatedResponse,
+  ApiBody,
 } from '@nestjs/swagger';
 import { EventsService } from './events.service';
 import { CreateEventDto } from './dto/create-event.dto';
@@ -12,36 +25,36 @@ import { Roles } from 'src/common/decorators/roles.decorator';
 @ApiBearerAuth()
 @Controller('events')
 export class EventsController {
-  constructor(private readonly eventsService: EventsService) { }
+  constructor(private readonly eventsService: EventsService) {}
 
   @Post()
   @ApiOperation({
-    summary: "Création d'un événement",
-    description: "Crée un nouvel événement (type, date, lieu, etc.).",
+    summary: "Creation d'un evenement",
+    description: 'Cree un nouvel evenement (type, date, lieu, etc.).',
     operationId: 'eventsCreate',
   })
   @ApiBody({
-    type: CreateEventDto, 
+    type: CreateEventDto,
     examples: {
       default: {
         value: {
-          title: "Mariage Ali & Ines",
-          description: "description",
-          location: "Salle des Fêtes - Sfax",
-          startdate: "2025-12-20T17:00:00.000Z",
-          enddate: "2025-12-20T17:00:00.000Z",
-          type: "Mariages",
+          title: 'Mariage Ali & Ines',
+          description: 'description',
+          location: 'Salle des Fetes - Sfax',
+          startdate: '2025-12-20T17:00:00.000Z',
+          enddate: '2025-12-20T17:00:00.000Z',
+          type: 'Mariages',
           serveurs: [],
           nbServeur: 18,
           guests: 180,
-          status: "En attente",
+          status: 'En attente',
           amount: 4500,
-          etat: "Urgent"
-        }
-      }
-    }
+          etat: 'Urgent',
+        },
+      },
+    },
   })
-  @ApiCreatedResponse({ description: 'Événement créé.' })
+  @ApiCreatedResponse({ description: 'Evenement cree.' })
   @Roles('admin', 'superadmin')
   create(@Body() createEventDto: CreateEventDto) {
     return this.eventsService.create(createEventDto);
@@ -50,50 +63,39 @@ export class EventsController {
   @Public()
   @Get()
   @ApiOperation({
-    summary: 'Liste des événements',
-    description: 'Retourne tous les événements (sans pagination), triés par date décroissante.',
+    summary: 'Liste des evenements',
+    description:
+      'Retourne tous les evenements (sans pagination), tries par date decroissante.',
     operationId: 'eventsFindAll',
   })
-  @ApiOkResponse({ description: 'Liste de tous les événements.' })
+  @ApiOkResponse({ description: 'Liste de tous les evenements.' })
   findAll() {
     return this.eventsService.findAll();
   }
 
-  @Public()
-  @Get(':id')
-  @ApiOperation({
-    summary: "Détail d'un événement",
-    description: "Retourne un événement par identifiant.",
-    operationId: 'eventsFindOne',
-  })
-  @ApiOkResponse({ description: 'Détail de l’événement.' })
-  findOne(@Param('id') id: string) {
-    return this.eventsService.findOne(id);
-  }
-
   @Patch(':id')
   @ApiOperation({
-    summary: "Mise à jour d'un événement",
-    description: "Met à jour les champs d’un événement existant.",
+    summary: "Mise a jour d'un evenement",
+    description: "Met a jour les champs d'un evenement existant.",
     operationId: 'eventsUpdate',
   })
   @ApiBody({
     type: UpdateEventDto,
     examples: {
-      statusOnly: { value: { status: "confirme" } },
+      statusOnly: { value: { status: 'confirme' } },
       full: {
         value: {
-          title: "Mariage Ali & Ines (MAJ)",
-          location: "Sousse",
-          date: "2025-12-21T18:00:00.000Z",
-          type: "Buffets",
+          title: 'Mariage Ali & Ines (MAJ)',
+          location: 'Sousse',
+          date: '2025-12-21T18:00:00.000Z',
+          type: 'Buffets',
           guests: 200,
-          amount: 5200
-        }
-      }
-    }
+          amount: 5200,
+        },
+      },
+    },
   })
-  @ApiOkResponse({ description: 'Événement mis à jour.' })
+  @ApiOkResponse({ description: 'Evenement mis a jour.' })
   @Roles('admin', 'superadmin')
   update(@Param('id') id: string, @Body() updateEventDto: UpdateEventDto) {
     return this.eventsService.update(id, updateEventDto);
@@ -101,65 +103,89 @@ export class EventsController {
 
   @Delete(':id')
   @ApiOperation({
-    summary: "Suppression d'un événement",
-    description: 'Supprime un événement par identifiant.',
+    summary: "Suppression d'un evenement",
+    description: 'Supprime un evenement par identifiant.',
     operationId: 'eventsDelete',
   })
-  @ApiOkResponse({ description: 'Événement supprimé.' })
+  @ApiOkResponse({ description: 'Evenement supprime.' })
   @Roles('admin', 'superadmin')
   remove(@Param('id') id: string) {
     return this.eventsService.remove(id);
   }
 
-  // ---------- Analytics ----------
   @Get('analytics/kpi')
   @ApiOperation({
-    summary: 'KPI événements (mois vs mois précédent)',
-    description: 'Retourne 4 KPI (événements, serveurs actifs, demandes en attente, revenus).',
+    summary: 'KPI evenements (mois vs mois precedent)',
+    description:
+      'Retourne 4 KPI (evenements, serveurs actifs, demandes en attente, revenus).',
     operationId: 'eventsKpi',
   })
-  @ApiOkResponse({ description: 'KPI du mois courant vs mois précédent.' })
+  @ApiOkResponse({ description: 'KPI du mois courant vs mois precedent.' })
   @Roles('admin', 'superadmin')
-  kpi() { return this.eventsService.kpi(); }
+  kpi() {
+    return this.eventsService.kpi();
+  }
 
   @Get('analytics/recent')
   @ApiOperation({
-    summary: 'Événements ajoutés récemment',
-    description: 'Retourne les 4 derniers événements créés.',
+    summary: 'Evenements ajoutes recemment',
+    description: 'Retourne les 4 derniers evenements crees.',
     operationId: 'eventsRecent',
   })
-  @ApiOkResponse({ description: '4 événements ajoutés récemment.' })
+  @ApiOkResponse({ description: '4 evenements ajoutes recemment.' })
   @Roles('admin', 'superadmin')
-  recent() { return this.eventsService.recent(); }
+  recent() {
+    return this.eventsService.recent();
+  }
 
   @Get('analytics/types/percent')
   @ApiOperation({
-    summary: 'Répartition par type',
-    description: 'Retourne le nombre et le pourcentage des événements par type.',
+    summary: 'Repartition par type',
+    description:
+      'Retourne le nombre et le pourcentage des evenements par type.',
     operationId: 'eventsTypesPercent',
   })
-  @ApiOkResponse({ description: 'Répartition par type (percent + count).' })
+  @ApiOkResponse({ description: 'Repartition par type (percent + count).' })
   @Roles('admin', 'superadmin')
-  typesPercent() { return this.eventsService.typesPercent(); }
+  typesPercent() {
+    return this.eventsService.typesPercent();
+  }
 
-  // ---------- Meta ----------
   @Public()
   @Get('meta/types')
   @ApiOperation({
-    summary: "Types d'événement",
-    description: "Retourne l'énumération des types { key, value }.",
+    summary: "Types d'evenement",
+    description: "Retourne l'enumeration des types { key, value }.",
     operationId: 'eventsTypesMeta',
   })
-  @ApiOkResponse({ description: 'Énum des types (key/value).' })
-  typesKV() { return this.eventsService.typesKV(); }
+  @ApiOkResponse({ description: 'Enum des types (key/value).' })
+  typesKV() {
+    return this.eventsService.typesKV();
+  }
 
   @Public()
   @Get('meta/statuses')
   @ApiOperation({
-    summary: "Statuts d'événement",
-    description: "Retourne l'énumération des statuts { key, value }.",
+    summary: "Statuts d'evenement",
+    description: "Retourne l'enumeration des statuts { key, value }.",
     operationId: 'eventsStatusesMeta',
   })
-  @ApiOkResponse({ description: 'Énum des statuts (key/value).' })
-  statusesKV() { return this.eventsService.statusesKV(); }
+  @ApiOkResponse({ description: 'Enum des statuts (key/value).' })
+  statusesKV() {
+    return this.eventsService.statusesKV();
+  }
+
+  // Keep this dynamic route at the end of GET routes to avoid
+  // intercepting /analytics/* and /meta/* paths.
+  @Public()
+  @Get(':id')
+  @ApiOperation({
+    summary: "Detail d'un evenement",
+    description: 'Retourne un evenement par identifiant.',
+    operationId: 'eventsFindOne',
+  })
+  @ApiOkResponse({ description: "Detail de l'evenement." })
+  findOne(@Param('id') id: string) {
+    return this.eventsService.findOne(id);
+  }
 }
