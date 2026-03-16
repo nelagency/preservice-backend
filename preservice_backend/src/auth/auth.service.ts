@@ -19,6 +19,15 @@ type AuthUserLike = {
   mot_passe?: string;
 };
 
+type AuthTokenPayload = {
+  sub: string;
+  email: string;
+  role: UserRole | string;
+  realm: 'user';
+  nom?: string;
+  isActive?: boolean;
+};
+
 type ResetPayload = { sub?: string; typ?: string };
 
 function asIdString(id: unknown): string {
@@ -29,6 +38,14 @@ function asIdString(id: unknown): string {
     if (maybe && maybe !== '[object Object]') return maybe;
   }
   return '';
+}
+
+function toStringValue(
+  value: string | number | undefined,
+): number | StringValue | undefined {
+  if (typeof value === 'number') return value;
+  if (typeof value === 'string' && value.trim()) return value as StringValue;
+  return undefined;
 }
 
 @Injectable()
@@ -42,7 +59,12 @@ export class AuthService {
   ) {}
 
   private signToken(user: AuthUserLike) {
-    const payload = {
+    const ACCESS_SECRET = this.configService.get<string>('auth.accessToken');
+    if (!ACCESS_SECRET) {
+      throw new UnauthorizedException('Access token secret is not configured');
+    }
+
+    const payload: AuthTokenPayload = {
       sub: user.id?.toString() ?? asIdString(user._id),
       email: user.email,
       role: user.role,
@@ -50,8 +72,9 @@ export class AuthService {
       nom: user.nom,
       isActive: user.isActive,
     };
-    const ACCESS_SECRET = this.configService.get<string>('auth.accessToken');
-    const ACCESS_EXPIRES_IN = this.configService.get<string>('auth.accessIn');
+    const ACCESS_EXPIRES_IN = toStringValue(
+      this.configService.get<string | number>('auth.accessIn'),
+    );
     return {
       access_token: this.jwt.sign(payload, {
         secret: ACCESS_SECRET,
@@ -74,7 +97,17 @@ export class AuthService {
     if (doc.isActive === false)
       throw new UnauthorizedException('Compte inactif');
 
-    return doc.toJSON();
+    const raw = doc.toObject<AuthUserLike>();
+    if (!raw.email || !raw.role) {
+      throw new UnauthorizedException('Utilisateur invalide');
+    }
+    return {
+      _id: raw._id,
+      email: raw.email,
+      role: raw.role,
+      nom: raw.nom,
+      isActive: raw.isActive,
+    };
   }
 
   async login(
@@ -83,7 +116,15 @@ export class AuthService {
     meta?: { ua?: string; ip?: string },
   ) {
     const user = await this.validateUser(email, mot_passe);
-    const at = this.signToken(user);
+    const tokenUser: AuthUserLike = {
+      _id: user._id,
+      email: user.email,
+      role: user.role,
+      nom: user.nom,
+      isActive: user.isActive,
+    };
+
+    const at = this.signToken(tokenUser);
     const rt = await this.rts.generate(at.user.sub, 'user', meta);
     return { ...at, refresh_token: rt.token, refresh_expires_at: rt.expiresAt };
   }
@@ -104,9 +145,20 @@ export class AuthService {
 
     const created = new this.users(data);
     await created.save();
-    const user = created.toJSON();
+    const user = created.toObject<AuthUserLike>();
+    if (!user.email || !user.role) {
+      throw new UnauthorizedException('Utilisateur invalide');
+    }
 
-    const at = this.signToken(user);
+    const tokenUser: AuthUserLike = {
+      _id: user._id,
+      email: user.email,
+      role: user.role,
+      nom: user.nom,
+      isActive: user.isActive,
+    };
+
+    const at = this.signToken(tokenUser);
     const rt = await this.rts.generate(at.user.sub, 'user', meta);
     return { ...at, refresh_token: rt.token, refresh_expires_at: rt.expiresAt };
   }
@@ -120,7 +172,16 @@ export class AuthService {
       await this.rts.verifyAndRotate(oldRefreshToken, userIdHint, 'user', meta);
     const userDoc = await this.users.findById(userId).lean();
     if (!userDoc) throw new UnauthorizedException('Utilisateur introuvable');
-    const at = this.signToken(userDoc);
+    if (!userDoc.email || !userDoc.role) {
+      throw new UnauthorizedException('Utilisateur introuvable');
+    }
+    const at = this.signToken({
+      _id: userDoc._id,
+      email: userDoc.email,
+      role: userDoc.role,
+      nom: userDoc.nom,
+      isActive: userDoc.isActive,
+    });
     return {
       ...at,
       refresh_token: newToken,
