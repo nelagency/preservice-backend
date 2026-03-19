@@ -124,6 +124,21 @@ let ServeurAuthService = class ServeurAuthService {
         const rt = await this.rts.generate(at.user.sub, 'serveur', meta);
         return { ...at, refresh_token: rt.token, refresh_expires_at: rt.expiresAt };
     }
+    async refresh(oldRefreshToken, userIdHint, meta) {
+        const { newToken, userId, expiresAt } = await this.rts.verifyAndRotate(oldRefreshToken, userIdHint, 'serveur', meta);
+        const user = await this.me(userId);
+        const access = this.signToken({
+            _id: user.sub,
+            email: user.email,
+            nom: user.nom,
+            isActive: user.isActive,
+        });
+        return {
+            ...access,
+            refresh_token: newToken,
+            refresh_expires_at: expiresAt,
+        };
+    }
     async me(serveurId) {
         const s = await this.serveurs.findById(serveurId).lean();
         if (!s)

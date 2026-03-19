@@ -19,6 +19,8 @@ const class_validator_1 = require("class-validator");
 const serveur_auth_service_1 = require("./serveur-auth.service");
 const config_1 = require("@nestjs/config");
 const public_decorator_1 = require("../common/decorators/public.decorator");
+const security_utils_1 = require("../common/security.utils");
+const auth_rate_limit_service_1 = require("./auth-rate-limit.service");
 class ServeurLoginDto {
     email;
     mot_passe;
@@ -46,25 +48,78 @@ class ServeurLoginResp {
     refresh_expires_at;
     user;
 }
+function getRefreshFromReq(req) {
+    const rtCookie = req.cookies;
+    const rt = rtCookie?.rt;
+    if (rt)
+        return rt;
+    const body = req.body;
+    const bodyToken = body?.refresh_token ?? body?.refreshToken;
+    if (typeof bodyToken === 'string' && bodyToken.trim()) {
+        return bodyToken.trim();
+    }
+    const h = req.headers.authorization || '';
+    const [type, token] = h.split(' ');
+    return type?.toLowerCase() === 'refresh' && token ? token : null;
+}
 let ServeurAuthController = class ServeurAuthController {
     auth;
     configService;
-    constructor(auth, configService) {
+    authRateLimit;
+    constructor(auth, configService, authRateLimit) {
         this.auth = auth;
         this.configService = configService;
+        this.authRateLimit = authRateLimit;
     }
-    async login(dto, req) {
-        const meta = { ua: req.headers['user-agent'], ip: req.ip };
+    setRefreshCookie(res, token, expiresAt) {
+        const secure = String(this.configService.get('cookies.cookieSecure')).toLowerCase() ===
+            'true';
+        const domain = this.configService.get('cookies.cookieDomain') || undefined;
+        res.cookie('rt', token, {
+            httpOnly: true,
+            secure,
+            sameSite: secure ? 'none' : 'lax',
+            domain,
+            path: '/api',
+            expires: expiresAt,
+        });
+    }
+    async login(dto, req, res) {
+        const ip = (0, security_utils_1.getClientIp)(req);
+        const rateKey = `serveur-login:${ip}:${dto.email.toLowerCase().trim()}`;
+        this.authRateLimit.consume(rateKey, {
+            limit: 5,
+            windowMs: 15 * 60 * 1000,
+            message: 'Trop de tentatives de connexion, reessayez plus tard.',
+        });
+        const meta = { ua: req.headers['user-agent'], ip };
         const result = await this.auth.login(dto.email, dto.mot_passe, meta);
+        this.setRefreshCookie(res, result.refresh_token, result.refresh_expires_at);
+        this.authRateLimit.reset(rateKey);
         const frontendBase = (this.configService.get('FRONTEND_BASE_URL') ||
             'https://dashboard.nelagency.com').replace(/\/$/, '');
         return { ...result, redirectTo: `${frontendBase}/serveur` };
     }
     me(req) {
         if (req.user?.realm !== 'serveur') {
-            return { error: 'Wrong realm' };
+            throw new common_1.UnauthorizedException('Wrong realm');
         }
         return req.user;
+    }
+    async refresh(req, res) {
+        const old = getRefreshFromReq(req);
+        if (!old)
+            throw new common_1.UnauthorizedException('Refresh token manquant');
+        const ip = (0, security_utils_1.getClientIp)(req);
+        this.authRateLimit.consume(`serveur-refresh:${ip}`, {
+            limit: 20,
+            windowMs: 15 * 60 * 1000,
+            message: 'Trop de renouvellements de session, reessayez plus tard.',
+        });
+        const meta = { ua: req.headers['user-agent'], ip };
+        const result = await this.auth.refresh(old, req.user?.sub, meta);
+        this.setRefreshCookie(res, result.refresh_token, result.refresh_expires_at);
+        return result;
     }
 };
 exports.ServeurAuthController = ServeurAuthController;
@@ -86,23 +141,8 @@ __decorate([
         },
     }),
     (0, swagger_1.ApiOkResponse)({
-        description: 'Authentification serveur réussie.',
+        description: 'Authentification serveur reussie.',
         type: ServeurLoginResp,
-        schema: {
-            example: {
-                access_token: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
-                refresh_token: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
-                refresh_expires_at: '2025-11-12T07:34:02.000Z',
-                user: {
-                    sub: '66f…abc',
-                    email: 'ali.bensalem@example.com',
-                    role: 'serveur',
-                    nom: 'Ali Bensalem',
-                    isActive: true,
-                    realm: 'serveur',
-                },
-            },
-        },
     }),
     (0, swagger_1.ApiUnauthorizedResponse)({
         description: 'Identifiants invalides ou compte inactif.',
@@ -110,44 +150,51 @@ __decorate([
     (0, swagger_1.ApiResponse)({ status: 500, description: 'Erreur serveur.' }),
     __param(0, (0, common_1.Body)()),
     __param(1, (0, common_1.Req)()),
+    __param(2, (0, common_1.Res)({ passthrough: true })),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [ServeurLoginDto, Object]),
+    __metadata("design:paramtypes", [ServeurLoginDto, Object, Object]),
     __metadata("design:returntype", Promise)
 ], ServeurAuthController.prototype, "login", null);
 __decorate([
     (0, common_1.Get)('me'),
     (0, swagger_1.ApiOperation)({
-        summary: 'Profil du serveur connecté',
+        summary: 'Profil du serveur connecte',
         description: 'Retourne le payload du JWT (realm=serveur).',
         operationId: 'authServeurMe',
     }),
     (0, swagger_1.ApiBearerAuth)(),
     (0, swagger_1.ApiOkResponse)({
-        description: 'Profil serveur (décodé du JWT).',
+        description: 'Profil serveur decode du JWT.',
         type: ServeurAuthUser,
-        schema: {
-            example: {
-                sub: '66f…abc',
-                email: 'ali.bensalem@example.com',
-                role: 'serveur',
-                nom: 'Ali Bensalem',
-                isActive: true,
-                realm: 'serveur',
-            },
-        },
     }),
     (0, swagger_1.ApiUnauthorizedResponse)({
-        description: 'Token manquant/expiré ou realm non autorisé.',
+        description: 'Token manquant/expire ou realm non autorise.',
     }),
     __param(0, (0, common_1.Req)()),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [Object]),
     __metadata("design:returntype", void 0)
 ], ServeurAuthController.prototype, "me", null);
+__decorate([
+    (0, public_decorator_1.Public)(),
+    (0, common_1.Post)('refresh'),
+    (0, common_1.HttpCode)(common_1.HttpStatus.OK),
+    (0, swagger_1.ApiOperation)({
+        summary: 'Renouvellement du token serveur',
+        operationId: 'authServeurRefresh',
+    }),
+    (0, swagger_1.ApiOkResponse)({ description: 'Nouveaux jetons emis.', type: ServeurLoginResp }),
+    __param(0, (0, common_1.Req)()),
+    __param(1, (0, common_1.Res)({ passthrough: true })),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object, Object]),
+    __metadata("design:returntype", Promise)
+], ServeurAuthController.prototype, "refresh", null);
 exports.ServeurAuthController = ServeurAuthController = __decorate([
     (0, swagger_1.ApiTags)('Auth Serveur'),
     (0, common_1.Controller)('auth-serveur'),
     __metadata("design:paramtypes", [serveur_auth_service_1.ServeurAuthService,
-        config_1.ConfigService])
+        config_1.ConfigService,
+        auth_rate_limit_service_1.AuthRateLimitService])
 ], ServeurAuthController);
 //# sourceMappingURL=serveur-auth.controller.js.map

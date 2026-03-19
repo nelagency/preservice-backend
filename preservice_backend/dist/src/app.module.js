@@ -59,7 +59,10 @@ exports.AppModule = AppModule = __decorate([
                 global: true,
                 inject: [config_1.ConfigService],
                 useFactory: (cfg) => {
-                    const secret = cfg.get('auth.accessToken') ?? 'changeme';
+                    const secret = cfg.get('auth.accessToken');
+                    if (!secret) {
+                        throw new Error('JWT access token secret is required');
+                    }
                     const rawExp = cfg.get('auth.accessIn', '60m');
                     const expiresIn = coerceExpires(rawExp, '60m');
                     return {

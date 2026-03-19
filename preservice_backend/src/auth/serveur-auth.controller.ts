@@ -6,6 +6,8 @@ import {
   HttpStatus,
   Post,
   Req,
+  Res,
+  UnauthorizedException,
 } from '@nestjs/common';
 import {
   ApiBearerAuth,
@@ -16,15 +18,13 @@ import {
   ApiTags,
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
-import type { Request } from 'express';
+import type { Request, Response } from 'express';
 import { IsEmail, IsString, MinLength } from 'class-validator';
 import { ServeurAuthService } from './serveur-auth.service';
 import { ConfigService } from '@nestjs/config';
-// (optionnel mais propre) un guard qui garantit realm=serveur
-// import { UseGuards } from '@nestjs/common';
-// import { JwtAuthGuard } from '../auth/jwt-auth.guard';
-// import { AccountTypeGuard } from '../auth/guards/account-type.guard';
 import { Public } from 'src/common/decorators/public.decorator';
+import { getClientIp } from 'src/common/security.utils';
+import { AuthRateLimitService } from './auth-rate-limit.service';
 
 class ServeurLoginDto {
   @IsEmail() email: string;
@@ -49,13 +49,48 @@ class ServeurLoginResp {
   user: ServeurAuthUser;
 }
 
+function getRefreshFromReq(req: Request): string | null {
+  const rtCookie = req.cookies as { rt?: string } | undefined;
+  const rt = rtCookie?.rt;
+  if (rt) return rt;
+
+  const body = req.body as
+    | { refresh_token?: string; refreshToken?: string }
+    | undefined;
+  const bodyToken = body?.refresh_token ?? body?.refreshToken;
+  if (typeof bodyToken === 'string' && bodyToken.trim()) {
+    return bodyToken.trim();
+  }
+
+  const h = req.headers.authorization || '';
+  const [type, token] = h.split(' ');
+  return type?.toLowerCase() === 'refresh' && token ? token : null;
+}
+
 @ApiTags('Auth Serveur')
 @Controller('auth-serveur')
 export class ServeurAuthController {
   constructor(
     private readonly auth: ServeurAuthService,
     private readonly configService: ConfigService,
+    private readonly authRateLimit: AuthRateLimitService,
   ) {}
+
+  private setRefreshCookie(res: Response, token: string, expiresAt: Date) {
+    const secure =
+      String(this.configService.get('cookies.cookieSecure')).toLowerCase() ===
+      'true';
+    const domain =
+      this.configService.get<string>('cookies.cookieDomain') || undefined;
+    res.cookie('rt', token, {
+      httpOnly: true,
+      secure,
+      sameSite: secure ? 'none' : 'lax',
+      domain,
+      path: '/api',
+      expires: expiresAt,
+    });
+  }
 
   @Public()
   @Post('login')
@@ -75,86 +110,85 @@ export class ServeurAuthController {
     },
   })
   @ApiOkResponse({
-    description: 'Authentification serveur réussie.',
+    description: 'Authentification serveur reussie.',
     type: ServeurLoginResp,
-    schema: {
-      example: {
-        access_token: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
-        refresh_token: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
-        refresh_expires_at: '2025-11-12T07:34:02.000Z',
-        user: {
-          sub: '66f…abc',
-          email: 'ali.bensalem@example.com',
-          role: 'serveur',
-          nom: 'Ali Bensalem',
-          isActive: true,
-          realm: 'serveur',
-        },
-      },
-    },
   })
   @ApiUnauthorizedResponse({
     description: 'Identifiants invalides ou compte inactif.',
   })
   @ApiResponse({ status: 500, description: 'Erreur serveur.' })
-  async login(@Body() dto: ServeurLoginDto, @Req() req: AuthRequest) {
-    const meta = { ua: req.headers['user-agent'], ip: req.ip };
+  async login(
+    @Body() dto: ServeurLoginDto,
+    @Req() req: AuthRequest,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    const ip = getClientIp(req);
+    const rateKey = `serveur-login:${ip}:${dto.email.toLowerCase().trim()}`;
+    this.authRateLimit.consume(rateKey, {
+      limit: 5,
+      windowMs: 15 * 60 * 1000,
+      message: 'Trop de tentatives de connexion, reessayez plus tard.',
+    });
+
+    const meta = { ua: req.headers['user-agent'], ip };
     const result = await this.auth.login(dto.email, dto.mot_passe, meta);
+    this.setRefreshCookie(res, result.refresh_token, result.refresh_expires_at);
+    this.authRateLimit.reset(rateKey);
+
     const frontendBase = (
       this.configService.get<string>('FRONTEND_BASE_URL') ||
       'https://dashboard.nelagency.com'
     ).replace(/\/$/, '');
-    // si tu veux poser un cookie httpOnly 'rt' :
-    // this.setRefreshCookie(res, result.refresh_token, result.refresh_expires_at);
+
     return { ...result, redirectTo: `${frontendBase}/serveur` };
   }
 
   @Get('me')
   @ApiOperation({
-    summary: 'Profil du serveur connecté',
+    summary: 'Profil du serveur connecte',
     description: 'Retourne le payload du JWT (realm=serveur).',
     operationId: 'authServeurMe',
   })
   @ApiBearerAuth()
   @ApiOkResponse({
-    description: 'Profil serveur (décodé du JWT).',
+    description: 'Profil serveur decode du JWT.',
     type: ServeurAuthUser,
-    schema: {
-      example: {
-        sub: '66f…abc',
-        email: 'ali.bensalem@example.com',
-        role: 'serveur',
-        nom: 'Ali Bensalem',
-        isActive: true,
-        realm: 'serveur',
-      },
-    },
   })
   @ApiUnauthorizedResponse({
-    description: 'Token manquant/expiré ou realm non autorisé.',
+    description: 'Token manquant/expire ou realm non autorise.',
   })
-  // @UseGuards(JwtAuthGuard, new AccountTypeGuard('serveur')) // <-- recommandé à la place du if
   me(@Req() req: AuthRequest) {
-    // Si tu n’utilises pas encore le guard de realm, garde ce check minimal :
     if (req.user?.realm !== 'serveur') {
-      // tu peux renvoyer une UnauthorizedException pour une doc plus propre :
-      // throw new UnauthorizedException('Wrong realm');
-      return { error: 'Wrong realm' };
+      throw new UnauthorizedException('Wrong realm');
     }
     return req.user;
   }
 
-  // (Optionnel) endpoint refresh dédié aux serveurs si tu sépares les flux
-  // @Public()
-  // @Post('refresh')
-  // @HttpCode(HttpStatus.OK)
-  // @ApiOperation({ summary: 'Renouvellement du token (serveur)', operationId: 'authServeurRefresh' })
-  // @ApiOkResponse({ description: 'Nouveaux jetons émis.', type: ServeurLoginResp })
-  // async refresh(@Req() req: any, @Res({ passthrough: true }) res: Response) {
-  //   const old = getRefreshFromReq(req); // même helper que côté AuthController
-  //   const meta = { ua: req.headers['user-agent'], ip: req.ip };
-  //   const { access_token, user, refresh_token, refresh_expires_at } = await this.auth.refresh(old, req?.user?.sub, meta);
-  //   this.setRefreshCookie(res, refresh_token, refresh_expires_at);
-  //   return { user, access_token, refresh_token, refresh_expires_at };
-  // }
+  @Public()
+  @Post('refresh')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Renouvellement du token serveur',
+    operationId: 'authServeurRefresh',
+  })
+  @ApiOkResponse({ description: 'Nouveaux jetons emis.', type: ServeurLoginResp })
+  async refresh(
+    @Req() req: AuthRequest,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    const old = getRefreshFromReq(req);
+    if (!old) throw new UnauthorizedException('Refresh token manquant');
+
+    const ip = getClientIp(req);
+    this.authRateLimit.consume(`serveur-refresh:${ip}`, {
+      limit: 20,
+      windowMs: 15 * 60 * 1000,
+      message: 'Trop de renouvellements de session, reessayez plus tard.',
+    });
+
+    const meta = { ua: req.headers['user-agent'], ip };
+    const result = await this.auth.refresh(old, req.user?.sub, meta);
+    this.setRefreshCookie(res, result.refresh_token, result.refresh_expires_at);
+    return result;
+  }
 }

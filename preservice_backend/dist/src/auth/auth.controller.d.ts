@@ -6,6 +6,7 @@ import { ConfigService } from '@nestjs/config';
 import { UserRole } from 'src/users/entities/user.entity';
 import { TwoFactorService } from './two-factor.service';
 import { AdminAuditLogService } from './admin-audit-log.service';
+import { AuthRateLimitService } from './auth-rate-limit.service';
 declare class LoginDto {
     email: string;
     mot_passe: string;
@@ -49,8 +50,9 @@ export declare class AuthController {
     private readonly rts;
     private readonly twoFactor;
     private readonly adminAuditLogs;
+    private readonly authRateLimit;
     private readonly logger;
-    constructor(configService: ConfigService, auth: AuthService, blacklist: TokenBlacklistService, rts: RefreshTokensService, twoFactor: TwoFactorService, adminAuditLogs: AdminAuditLogService);
+    constructor(configService: ConfigService, auth: AuthService, blacklist: TokenBlacklistService, rts: RefreshTokensService, twoFactor: TwoFactorService, adminAuditLogs: AdminAuditLogService, authRateLimit: AuthRateLimitService);
     private setRefreshCookie;
     private clearRefreshCookie;
     login(dto: LoginDto, req: AuthRequest, res: Response): Promise<{
@@ -113,7 +115,7 @@ export declare class AuthController {
         refresh_token: string;
         refresh_expires_at: Date;
     }>;
-    forgotPassword(dto: ForgotPasswordDto): Promise<{
+    forgotPassword(dto: ForgotPasswordDto, req: AuthRequest): Promise<{
         success: boolean;
         message: string;
         reset_link_preview?: undefined;

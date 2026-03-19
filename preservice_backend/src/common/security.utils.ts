@@ -79,7 +79,9 @@ export function getAdminAllowedIps(env = process.env): string[] {
 
 export function isAllowedAdminIp(ip: string, env = process.env) {
   const allowedIps = getAdminAllowedIps(env);
-  if (!allowedIps.length) return true;
+  if (!allowedIps.length) {
+    return String(env.NODE_ENV).toLowerCase() !== 'production';
+  }
 
   const normalizedIp = normalizeIp(ip);
   if (!normalizedIp) return false;

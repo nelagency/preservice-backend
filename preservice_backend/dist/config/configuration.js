@@ -10,7 +10,8 @@ exports.default = () => ({
         accessToken: process.env.JWT_SECRET,
         accessIn: process.env.JWT_EXPIRES_IN,
         refreshToken: process.env.REFRESH_JWT_SECRET,
-        refreshIn: process.env.REFRESH_JWT_EXPIRES_IN
+        refreshIn: process.env.REFRESH_JWT_EXPIRES_IN,
+        passwordResetSecret: process.env.PASSWORD_RESET_SECRET,
     },
     cookies: {
         cookieSecure: process.env.COOKIE_SECURE,

@@ -70,14 +70,15 @@ export class NotificationsGateway
         process.env.SERVEUR_ACCESS_JWT_SECRET,
         process.env.AUTH_JWT_SECRET,
       ].filter(Boolean) as string[];
+      if (!secrets.length) {
+        throw new Error('JWT secret is not configured for websocket authentication');
+      }
 
       let payload: any;
       let lastError: any;
-      for (const s of secrets.length ? secrets : [undefined]) {
+      for (const s of secrets) {
         try {
-          payload = s
-            ? this.jwt.verify(token, { secret: s })
-            : this.jwt.decode(token);
+          payload = this.jwt.verify(token, { secret: s });
           if (payload) break;
         } catch (e) {
           lastError = e;

@@ -25,6 +25,7 @@ import {
 } from './schemas/admin-audit-log.schema';
 import { AdminAuditLogService } from './admin-audit-log.service';
 import { TwoFactorService } from './two-factor.service';
+import { AuthRateLimitService } from './auth-rate-limit.service';
 
 @Module({
   imports: [
@@ -46,6 +47,7 @@ import { TwoFactorService } from './two-factor.service';
     ServeurAuthService,
     AdminAuditLogService,
     TwoFactorService,
+    AuthRateLimitService,
   ],
   controllers: [AuthController, ServeurAuthController],
 })

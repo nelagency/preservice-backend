@@ -28,6 +28,15 @@ export declare class ServeurAuthService {
         access_token: string;
         user: ServeurTokenPayload;
     }>;
+    refresh(oldRefreshToken: string, userIdHint?: string, meta?: {
+        ua?: string;
+        ip?: string;
+    }): Promise<{
+        refresh_token: string;
+        refresh_expires_at: Date;
+        access_token: string;
+        user: ServeurTokenPayload;
+    }>;
     me(serveurId: string): Promise<ServeurTokenPayload>;
 }
 export {};

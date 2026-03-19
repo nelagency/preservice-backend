@@ -51,7 +51,7 @@ let RefreshTokensService = class RefreshTokensService {
             secure,
             sameSite: secure ? 'none' : 'lax',
             domain,
-            path: '/api/auth',
+            path: '/api',
             expires: expiresAt,
         };
     }

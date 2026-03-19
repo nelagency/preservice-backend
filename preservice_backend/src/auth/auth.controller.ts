@@ -33,6 +33,8 @@ import { UserRole } from 'src/users/entities/user.entity';
 import { Roles } from 'src/common/decorators/roles.decorator';
 import { TwoFactorService } from './two-factor.service';
 import { AdminAuditLogService } from './admin-audit-log.service';
+import { AuthRateLimitService } from './auth-rate-limit.service';
+import { getClientIp } from 'src/common/security.utils';
 
 class LoginDto {
   @ApiProperty()
@@ -169,6 +171,7 @@ export class AuthController {
     private readonly rts: RefreshTokensService,
     private readonly twoFactor: TwoFactorService,
     private readonly adminAuditLogs: AdminAuditLogService,
+    private readonly authRateLimit: AuthRateLimitService,
   ) {}
 
   // Petit helper pour poser correctement le cookie (cf. plus bas implémentation finale)
@@ -183,7 +186,7 @@ export class AuthController {
       secure,
       sameSite: secure ? 'none' : 'lax',
       domain,
-      path: '/api/auth',
+      path: '/api',
       expires: expiresAt,
     });
   }
@@ -199,7 +202,7 @@ export class AuthController {
       secure,
       sameSite: secure ? 'none' : 'lax',
       domain,
-      path: '/api/auth',
+      path: '/api',
     });
   }
 
@@ -228,7 +231,15 @@ export class AuthController {
     @Req() req: AuthRequest,
     @Res({ passthrough: true }) res: Response,
   ) {
-    const meta = { ua: req.headers['user-agent'], ip: req.ip };
+    const ip = getClientIp(req);
+    const rateKey = `login:${ip}:${dto.email.toLowerCase().trim()}`;
+    this.authRateLimit.consume(rateKey, {
+      limit: 5,
+      windowMs: 15 * 60 * 1000,
+      message: 'Trop de tentatives de connexion, reessayez plus tard.',
+    });
+
+    const meta = { ua: req.headers['user-agent'], ip };
     let userForLogin;
     try {
       userForLogin = await this.auth.validateUser(dto.email, dto.mot_passe);
@@ -237,7 +248,7 @@ export class AuthController {
         email: dto.email,
         event: 'admin_login_attempt',
         status: 'failure',
-        ip: req.ip,
+        ip,
         userAgent: req.headers['user-agent'],
         metadata: { reason: 'invalid_credentials' },
       });
@@ -256,6 +267,7 @@ export class AuthController {
     }
 
     const result = await this.auth.login(dto.email, dto.mot_passe, meta);
+    this.authRateLimit.reset(rateKey);
     const frontendBase = (
       this.configService.get<string>('FRONTEND_BASE_URL') ||
       'https://dashboard.nelagency.com'
@@ -278,7 +290,14 @@ export class AuthController {
     @Req() req: AuthRequest,
     @Res({ passthrough: true }) res: Response,
   ) {
-    const meta = { ua: req.headers['user-agent'], ip: req.ip };
+    const ip = getClientIp(req);
+    this.authRateLimit.consume(`2fa:${ip}:${dto.twoFactorToken.slice(0, 12)}`, {
+      limit: 8,
+      windowMs: 10 * 60 * 1000,
+      message: 'Trop de codes 2FA invalides, reessayez plus tard.',
+    });
+
+    const meta = { ua: req.headers['user-agent'], ip };
     const challenge = await this.twoFactor.verifyLoginChallenge(
       dto.twoFactorToken,
       dto.code,
@@ -318,7 +337,7 @@ export class AuthController {
     @Req() req: AuthRequest,
     @Res({ passthrough: true }) res: Response,
   ) {
-    const meta = { ua: req.headers['user-agent'], ip: req.ip };
+    const meta = { ua: req.headers['user-agent'], ip: getClientIp(req) };
     const mot_passe = dto.mot_passe ?? dto.mot_de_passe;
     const numero_tel = dto.numero_tel ?? dto.telephone;
     const role = normalizeRole(dto.role);
@@ -381,7 +400,14 @@ export class AuthController {
     const old = getRefreshFromReq(req);
     if (!old) throw new UnauthorizedException('Refresh token manquant');
 
-    const meta = { ua: req.headers['user-agent'], ip: req.ip };
+    const ip = getClientIp(req);
+    this.authRateLimit.consume(`refresh:${ip}`, {
+      limit: 20,
+      windowMs: 15 * 60 * 1000,
+      message: 'Trop de renouvellements de session, reessayez plus tard.',
+    });
+
+    const meta = { ua: req.headers['user-agent'], ip };
     const { access_token, user, refresh_token, refresh_expires_at } =
       await this.auth.refresh(old, req.user?.sub, meta);
 
@@ -397,7 +423,14 @@ export class AuthController {
     summary: 'Demande de reinitialisation mot de passe',
     operationId: 'authForgotPassword',
   })
-  async forgotPassword(@Body() dto: ForgotPasswordDto) {
+  async forgotPassword(@Body() dto: ForgotPasswordDto, @Req() req: AuthRequest) {
+    const ip = getClientIp(req);
+    this.authRateLimit.consume(`forgot-password:${ip}`, {
+      limit: 5,
+      windowMs: 15 * 60 * 1000,
+      message:
+        'Trop de demandes de reinitialisation, reessayez plus tard.',
+    });
     return this.auth.requestPasswordReset(dto.email);
   }
 

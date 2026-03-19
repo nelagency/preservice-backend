@@ -306,8 +306,7 @@ export class AuthService {
 
     const secret =
       process.env.PASSWORD_RESET_SECRET ||
-      this.configService.get<string>('auth.refreshToken') ||
-      this.configService.get<string>('auth.accessToken');
+      this.configService.get<string>('auth.passwordResetSecret');
     if (!secret)
       throw new UnauthorizedException(
         'Reset password secret is not configured',
@@ -344,8 +343,7 @@ export class AuthService {
   async resetPassword(resetToken: string, newPassword: string) {
     const secret =
       process.env.PASSWORD_RESET_SECRET ||
-      this.configService.get<string>('auth.refreshToken') ||
-      this.configService.get<string>('auth.accessToken');
+      this.configService.get<string>('auth.passwordResetSecret');
     if (!secret)
       throw new UnauthorizedException(
         'Reset password secret is not configured',

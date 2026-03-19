@@ -52,7 +52,10 @@ const mongoLog = new Logger('MongoDB');
       global: true,
       inject: [ConfigService],
       useFactory: (cfg: ConfigService) => {
-        const secret = cfg.get<string>('auth.accessToken') ?? 'changeme';
+        const secret = cfg.get<string>('auth.accessToken');
+        if (!secret) {
+          throw new Error('JWT access token secret is required');
+        }
         const rawExp = cfg.get<string | number>('auth.accessIn', '60m');
         const expiresIn = coerceExpires(rawExp, '60m');
         return {

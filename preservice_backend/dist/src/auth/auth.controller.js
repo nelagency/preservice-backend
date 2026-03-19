@@ -26,6 +26,8 @@ const user_entity_1 = require("../users/entities/user.entity");
 const roles_decorator_1 = require("../common/decorators/roles.decorator");
 const two_factor_service_1 = require("./two-factor.service");
 const admin_audit_log_service_1 = require("./admin-audit-log.service");
+const auth_rate_limit_service_1 = require("./auth-rate-limit.service");
+const security_utils_1 = require("../common/security.utils");
 class LoginDto {
     email;
     mot_passe;
@@ -175,14 +177,16 @@ let AuthController = AuthController_1 = class AuthController {
     rts;
     twoFactor;
     adminAuditLogs;
+    authRateLimit;
     logger = new common_1.Logger(AuthController_1.name);
-    constructor(configService, auth, blacklist, rts, twoFactor, adminAuditLogs) {
+    constructor(configService, auth, blacklist, rts, twoFactor, adminAuditLogs, authRateLimit) {
         this.configService = configService;
         this.auth = auth;
         this.blacklist = blacklist;
         this.rts = rts;
         this.twoFactor = twoFactor;
         this.adminAuditLogs = adminAuditLogs;
+        this.authRateLimit = authRateLimit;
     }
     setRefreshCookie(res, token, expiresAt) {
         const secure = String(this.configService.get('cookies.cookieSecure')).toLowerCase() ===
@@ -193,7 +197,7 @@ let AuthController = AuthController_1 = class AuthController {
             secure,
             sameSite: secure ? 'none' : 'lax',
             domain,
-            path: '/api/auth',
+            path: '/api',
             expires: expiresAt,
         });
     }
@@ -206,11 +210,18 @@ let AuthController = AuthController_1 = class AuthController {
             secure,
             sameSite: secure ? 'none' : 'lax',
             domain,
-            path: '/api/auth',
+            path: '/api',
         });
     }
     async login(dto, req, res) {
-        const meta = { ua: req.headers['user-agent'], ip: req.ip };
+        const ip = (0, security_utils_1.getClientIp)(req);
+        const rateKey = `login:${ip}:${dto.email.toLowerCase().trim()}`;
+        this.authRateLimit.consume(rateKey, {
+            limit: 5,
+            windowMs: 15 * 60 * 1000,
+            message: 'Trop de tentatives de connexion, reessayez plus tard.',
+        });
+        const meta = { ua: req.headers['user-agent'], ip };
         let userForLogin;
         try {
             userForLogin = await this.auth.validateUser(dto.email, dto.mot_passe);
@@ -220,7 +231,7 @@ let AuthController = AuthController_1 = class AuthController {
                 email: dto.email,
                 event: 'admin_login_attempt',
                 status: 'failure',
-                ip: req.ip,
+                ip,
                 userAgent: req.headers['user-agent'],
                 metadata: { reason: 'invalid_credentials' },
             });
@@ -234,20 +245,27 @@ let AuthController = AuthController_1 = class AuthController {
             }, meta);
         }
         const result = await this.auth.login(dto.email, dto.mot_passe, meta);
+        this.authRateLimit.reset(rateKey);
         const frontendBase = (this.configService.get('FRONTEND_BASE_URL') ||
             'https://dashboard.nelagency.com').replace(/\/$/, '');
         this.setRefreshCookie(res, result.refresh_token, result.refresh_expires_at);
         return { ...result, redirectTo: `${frontendBase}/dashboard` };
     }
     async verifyTwoFactorLogin(dto, req, res) {
-        const meta = { ua: req.headers['user-agent'], ip: req.ip };
+        const ip = (0, security_utils_1.getClientIp)(req);
+        this.authRateLimit.consume(`2fa:${ip}:${dto.twoFactorToken.slice(0, 12)}`, {
+            limit: 8,
+            windowMs: 10 * 60 * 1000,
+            message: 'Trop de codes 2FA invalides, reessayez plus tard.',
+        });
+        const meta = { ua: req.headers['user-agent'], ip };
         const challenge = await this.twoFactor.verifyLoginChallenge(dto.twoFactorToken, dto.code, meta);
         const result = await this.auth.completeTwoFactorLogin(challenge.userId, meta);
         this.setRefreshCookie(res, result.refresh_token, result.refresh_expires_at);
         return { ...result, redirectTo: `${this.configService.get('FRONTEND_BASE_URL') || 'https://dashboard.nelagency.com'}/dashboard` };
     }
     async register(dto, req, res) {
-        const meta = { ua: req.headers['user-agent'], ip: req.ip };
+        const meta = { ua: req.headers['user-agent'], ip: (0, security_utils_1.getClientIp)(req) };
         const mot_passe = dto.mot_passe ?? dto.mot_de_passe;
         const numero_tel = dto.numero_tel ?? dto.telephone;
         const role = normalizeRole(dto.role);
@@ -281,12 +299,24 @@ let AuthController = AuthController_1 = class AuthController {
         const old = getRefreshFromReq(req);
         if (!old)
             throw new common_1.UnauthorizedException('Refresh token manquant');
-        const meta = { ua: req.headers['user-agent'], ip: req.ip };
+        const ip = (0, security_utils_1.getClientIp)(req);
+        this.authRateLimit.consume(`refresh:${ip}`, {
+            limit: 20,
+            windowMs: 15 * 60 * 1000,
+            message: 'Trop de renouvellements de session, reessayez plus tard.',
+        });
+        const meta = { ua: req.headers['user-agent'], ip };
         const { access_token, user, refresh_token, refresh_expires_at } = await this.auth.refresh(old, req.user?.sub, meta);
         this.setRefreshCookie(res, refresh_token, refresh_expires_at);
         return { user, access_token, refresh_token, refresh_expires_at };
     }
-    async forgotPassword(dto) {
+    async forgotPassword(dto, req) {
+        const ip = (0, security_utils_1.getClientIp)(req);
+        this.authRateLimit.consume(`forgot-password:${ip}`, {
+            limit: 5,
+            windowMs: 15 * 60 * 1000,
+            message: 'Trop de demandes de reinitialisation, reessayez plus tard.',
+        });
         return this.auth.requestPasswordReset(dto.email);
     }
     async resetPassword(dto) {
@@ -481,8 +511,9 @@ __decorate([
         operationId: 'authForgotPassword',
     }),
     __param(0, (0, common_1.Body)()),
+    __param(1, (0, common_1.Req)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [ForgotPasswordDto]),
+    __metadata("design:paramtypes", [ForgotPasswordDto, Object]),
     __metadata("design:returntype", Promise)
 ], AuthController.prototype, "forgotPassword", null);
 __decorate([
@@ -600,6 +631,7 @@ exports.AuthController = AuthController = AuthController_1 = __decorate([
         token_blacklist_service_1.TokenBlacklistService,
         refresh_tokens_service_1.RefreshTokensService,
         two_factor_service_1.TwoFactorService,
-        admin_audit_log_service_1.AdminAuditLogService])
+        admin_audit_log_service_1.AdminAuditLogService,
+        auth_rate_limit_service_1.AuthRateLimitService])
 ], AuthController);
 //# sourceMappingURL=auth.controller.js.map

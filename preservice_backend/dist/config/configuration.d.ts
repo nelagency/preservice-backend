@@ -9,6 +9,7 @@ declare const _default: () => {
         accessIn: string | undefined;
         refreshToken: string | undefined;
         refreshIn: string | undefined;
+        passwordResetSecret: string | undefined;
     };
     cookies: {
         cookieSecure: string | undefined;

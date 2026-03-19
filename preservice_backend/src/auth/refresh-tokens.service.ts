@@ -55,7 +55,7 @@ export class RefreshTokensService {
       secure,
       sameSite: secure ? ('none' as const) : ('lax' as const),
       domain,
-      path: '/api/auth',
+      path: '/api',
       expires: expiresAt,
     };
   }

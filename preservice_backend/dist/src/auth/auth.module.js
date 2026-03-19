@@ -25,6 +25,7 @@ const mail_module_1 = require("../mail/mail.module");
 const admin_audit_log_schema_1 = require("./schemas/admin-audit-log.schema");
 const admin_audit_log_service_1 = require("./admin-audit-log.service");
 const two_factor_service_1 = require("./two-factor.service");
+const auth_rate_limit_service_1 = require("./auth-rate-limit.service");
 let AuthModule = class AuthModule {
 };
 exports.AuthModule = AuthModule;
@@ -49,6 +50,7 @@ exports.AuthModule = AuthModule = __decorate([
             serveur_auth_service_1.ServeurAuthService,
             admin_audit_log_service_1.AdminAuditLogService,
             two_factor_service_1.TwoFactorService,
+            auth_rate_limit_service_1.AuthRateLimitService,
         ],
         controllers: [auth_controller_1.AuthController, serveur_auth_controller_1.ServeurAuthController],
     })
