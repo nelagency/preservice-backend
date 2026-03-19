@@ -22,7 +22,6 @@ import { PayTimesheetDto } from './dto/pay-timesheet.dto';
 export class TimesheetsController {
   constructor(private readonly svc: TimesheetsService) {}
 
-  // serveur : créer/maj sa feuille d'heures
   @Post('events/:eventId/timesheets')
   async submit(
     @Param('eventId') eventId: string,
@@ -32,23 +31,26 @@ export class TimesheetsController {
     return this.svc.submitForEvent(eventId, req.user.sub, dto);
   }
 
-  // serveur : récupérer sa feuille
   @Get('events/:eventId/timesheets/mine')
   async mine(@Param('eventId') eventId: string, @Req() req: any) {
     return this.svc.getMineForEvent(eventId, req.user.sub);
   }
 
-  // admin : lister en attente
   @UseGuards(RolesGuard)
   @Roles('superadmin', 'admin')
   @Get('admin/timesheets')
   async pending(@Query('status') status = 'submitted') {
     if (status === 'submitted') return this.svc.listPending();
-    // tu peux étendre pour d'autres filtres
     return this.svc.listPending();
   }
 
-  // admin : valider / rejeter
+  @UseGuards(RolesGuard)
+  @Roles('superadmin', 'admin')
+  @Get('admin/serveurs/:serveurId/timesheets')
+  async serveurHistory(@Param('serveurId') serveurId: string) {
+    return this.svc.listForServeur(serveurId);
+  }
+
   @UseGuards(RolesGuard)
   @Roles('superadmin', 'admin')
   @Patch('admin/timesheets/:id/review')
@@ -60,7 +62,6 @@ export class TimesheetsController {
     return this.svc.review(id, req.user.sub, body);
   }
 
-  // ---- NEW: admin : enregistrer un paiement ----
   @UseGuards(RolesGuard)
   @Roles('superadmin', 'admin')
   @Patch('admin/timesheets/:id/pay')
@@ -72,17 +73,14 @@ export class TimesheetsController {
     return this.svc.pay(id, req.user.sub, body);
   }
 
-  // historiques
   @Get('me/timesheets')
   @UseGuards(RolesGuard)
   @Roles('serveur')
   async myHistory(@Req() req: any) {
-    //const list = this.svc.listForServeur(req.user.sub);
-    //return list;
-    const serveurId = req.user?.serveurId ?? req.user?.sub; // <--- accepte les 2
+    const serveurId = req.user?.serveurId ?? req.user?.sub;
     return this.svc.listForServeur(serveurId);
-    // ou: return this.svc.listForServeurSmart(serveurId);  // si tu as mis la variante "Smart"
   }
+
   @UseGuards(RolesGuard)
   @Roles('superadmin', 'admin')
   @Get('events/:eventId/timesheets')
