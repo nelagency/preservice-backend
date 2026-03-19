@@ -82,7 +82,9 @@ export function getAdminAllowedIps(env = process.env): string[] {
 export function isAllowedAdminIp(ip: string, env = process.env) {
   const allowedIps = getAdminAllowedIps(env);
   if (!allowedIps.length) {
-    return String(env.NODE_ENV).toLowerCase() !== 'production';
+    // If no explicit allow list is configured, do not block admin access.
+    // This keeps production operable when ADMIN_ALLOWED_IPS is unset.
+    return true;
   }
 
   const normalizedIp = normalizeIp(ip);
