@@ -20,6 +20,7 @@
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
     "test:e2e": "jest --config ./test/jest-e2e.json",
     "seed:users": "ts-node src/scripts/seed-users.ts",
+    "reset:demo-accounts": "ts-node src/scripts/reset-demo-accounts.ts",
     "cron:maintenance": "node dist/src/scripts/cron-maintenance.js"
   },
   "dependencies": {
