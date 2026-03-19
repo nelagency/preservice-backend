@@ -64,6 +64,8 @@ export function getAllowedOrigins(env = process.env): Set<string> {
 }
 
 export function isOriginAllowed(origin: string, allowedOrigins: Set<string>) {
+  if (/^http:\/\/localhost:\d+$/i.test(origin)) return true;
+  if (/^http:\/\/127\.0\.0\.1:\d+$/i.test(origin)) return true;
   if (/^https:\/\/[a-z0-9-]+\.ngrok-free\.app$/i.test(origin)) return true;
   if (/^https:\/\/prest-service-front-[a-z0-9-]+\.vercel\.app$/i.test(origin)) {
     return true;
