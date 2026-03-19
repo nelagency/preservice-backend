@@ -5,9 +5,20 @@ import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { AllExceptionsFilter } from './common/all-exceptions.filter';
 import cookieParser from 'cookie-parser';
 import 'dotenv/config';
+import type { Request, Response, NextFunction } from 'express';
+import {
+  getAllowedOrigins,
+  getClientIp,
+  isAllowedAdminIp,
+  isOriginAllowed,
+} from './common/security.utils';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
+  const expressApp = app.getHttpAdapter().getInstance();
+
+  expressApp.set('trust proxy', 1);
+  expressApp.disable('x-powered-by');
 
   app.useLogger(['error', 'warn', 'log', 'debug']);
 
@@ -24,41 +35,41 @@ async function bootstrap() {
   app.useGlobalFilters(new AllExceptionsFilter());
 
   app.use(cookieParser());
+  const allowedOrigins = getAllowedOrigins();
 
-  const deployedOrigin = (
-    process.env.BACKEND_PUBLIC_URL ||
-    process.env.RENDER_EXTERNAL_URL ||
-    ''
-  ).replace(/\/$/, '');
+  app.use((req: Request, res: Response, next: NextFunction) => {
+    res.setHeader('X-Frame-Options', 'DENY');
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+    res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+    res.setHeader(
+      'Permissions-Policy',
+      'camera=(), microphone=(), geolocation=(), browsing-topics=()',
+    );
+    res.setHeader(
+      'Content-Security-Policy',
+      "default-src 'none'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'",
+    );
+    res.setHeader('Cross-Origin-Resource-Policy', 'same-site');
+    if (req.secure) {
+      res.setHeader(
+        'Strict-Transport-Security',
+        'max-age=31536000; includeSubDomains; preload',
+      );
+    }
 
-  const allowedOrigins = new Set([
-    'http://localhost:3000',
-    'http://localhost:3001',
-    'http://127.0.0.1:3000',
-    'http://127.0.0.1:3001',
-    'https://prest-service-front-ashen.vercel.app',
-    'https://dasboard.nelagency.com',
-    'https://dashboard.nelagency.com',
-  ]);
-  if (deployedOrigin) allowedOrigins.add(deployedOrigin);
+    const ip = getClientIp(req);
+    if (req.path.startsWith('/api/docs') && !isAllowedAdminIp(ip)) {
+      res.status(403).json({ message: 'Access denied from this IP' });
+      return;
+    }
+
+    next();
+  });
 
   app.enableCors({
     origin: (origin, cb) => {
       if (!origin) return cb(null, true);
-
-      if (/^https:\/\/[a-z0-9-]+\.ngrok-free\.app$/i.test(origin)) {
-        return cb(null, true);
-      }
-
-      if (/^https:\/\/prest-service-front-[a-z0-9-]+\.vercel\.app$/i.test(origin)) {
-        return cb(null, true);
-      }
-
-      if (/^https:\/\/[a-z0-9-]+\.onrender\.com$/i.test(origin)) {
-        return cb(null, true);
-      }
-
-      if (allowedOrigins.has(origin)) return cb(null, true);
+      if (isOriginAllowed(origin, allowedOrigins)) return cb(null, true);
 
       return cb(new Error(`CORS blocked for origin: ${origin}`), false);
     },

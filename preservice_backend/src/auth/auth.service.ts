@@ -1,4 +1,4 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { Injectable, Logger, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcryptjs';
 import { InjectModel } from '@nestjs/mongoose';
@@ -8,6 +8,8 @@ import { RefreshTokensService } from './refresh-tokens.service';
 import { ConfigService } from '@nestjs/config';
 import { MailService } from 'src/mail/mail.service';
 import type { StringValue } from 'ms';
+import { isAllowedAdminIp, normalizeIp } from 'src/common/security.utils';
+import { AdminAuditLogService } from './admin-audit-log.service';
 
 type AuthUserLike = {
   id?: string;
@@ -17,6 +19,7 @@ type AuthUserLike = {
   nom?: string;
   isActive?: boolean;
   mot_passe?: string;
+  twoFactorEnabled?: boolean;
 };
 
 type AuthTokenPayload = {
@@ -50,12 +53,15 @@ function toStringValue(
 
 @Injectable()
 export class AuthService {
+  private readonly logger = new Logger(AuthService.name);
+
   constructor(
     private configService: ConfigService,
     private jwt: JwtService,
     @InjectModel(User.name) private users: Model<UserDocument>,
     private readonly rts: RefreshTokensService,
     private readonly mail: MailService,
+    private readonly auditLogs: AdminAuditLogService,
   ) {}
 
   private signToken(user: AuthUserLike) {
@@ -73,7 +79,7 @@ export class AuthService {
       isActive: user.isActive,
     };
     const ACCESS_EXPIRES_IN = toStringValue(
-      this.configService.get<string | number>('auth.accessIn'),
+      this.configService.get<string | number>('auth.accessIn') ?? '20m',
     );
     return {
       access_token: this.jwt.sign(payload, {
@@ -84,10 +90,47 @@ export class AuthService {
     };
   }
 
+  private ensureAdminIpAllowed(user: AuthUserLike, ip?: string) {
+    if (!ip) return;
+    if (user.role !== UserRole.admin && user.role !== UserRole.superadmin) {
+      return;
+    }
+
+    const normalizedIp = normalizeIp(ip);
+    if (!isAllowedAdminIp(normalizedIp)) {
+      this.logger.warn(
+        `Blocked admin authentication for ${user.email} from IP ${normalizedIp || 'unknown'}`,
+      );
+      throw new UnauthorizedException('Admin access denied from this IP');
+    }
+  }
+
+  private logAdminAccess(
+    event: 'login' | 'refresh',
+    user: AuthUserLike,
+    meta?: { ua?: string; ip?: string },
+  ) {
+    if (user.role !== UserRole.admin && user.role !== UserRole.superadmin) {
+      return;
+    }
+
+    this.logger.log(
+      JSON.stringify({
+        type: 'admin_auth',
+        event,
+        email: user.email,
+        role: user.role,
+        ip: normalizeIp(meta?.ip),
+        userAgent: meta?.ua ?? '',
+        at: new Date().toISOString(),
+      }),
+    );
+  }
+
   async validateUser(email: string, mot_passe: string): Promise<AuthUserLike> {
     const doc = await this.users
       .findOne({ email })
-      .select('+mot_passe')
+      .select('+mot_passe +twoFactorSecret +twoFactorTempSecret')
       .lean(false);
     if (!doc) throw new UnauthorizedException('Email ou mot de passe invalide');
 
@@ -107,6 +150,8 @@ export class AuthService {
       role: raw.role,
       nom: raw.nom,
       isActive: raw.isActive,
+      twoFactorEnabled: (raw as AuthUserLike & { twoFactorEnabled?: boolean })
+        .twoFactorEnabled,
     };
   }
 
@@ -116,16 +161,19 @@ export class AuthService {
     meta?: { ua?: string; ip?: string },
   ) {
     const user = await this.validateUser(email, mot_passe);
+    this.ensureAdminIpAllowed(user, meta?.ip);
     const tokenUser: AuthUserLike = {
       _id: user._id,
       email: user.email,
       role: user.role,
       nom: user.nom,
       isActive: user.isActive,
+      twoFactorEnabled: user.twoFactorEnabled,
     };
 
     const at = this.signToken(tokenUser);
     const rt = await this.rts.generate(at.user.sub, 'user', meta);
+    this.logAdminAccess('login', tokenUser, meta);
     return { ...at, refresh_token: rt.token, refresh_expires_at: rt.expiresAt };
   }
 
@@ -175,19 +223,73 @@ export class AuthService {
     if (!userDoc.email || !userDoc.role) {
       throw new UnauthorizedException('Utilisateur introuvable');
     }
-    const at = this.signToken({
+    this.ensureAdminIpAllowed(
+      {
+        _id: userDoc._id,
+        email: userDoc.email,
+        role: userDoc.role,
+        nom: userDoc.nom,
+        isActive: userDoc.isActive,
+      },
+      meta?.ip,
+    );
+    const refreshedUser: AuthUserLike = {
       _id: userDoc._id,
       email: userDoc.email,
       role: userDoc.role,
       nom: userDoc.nom,
       isActive: userDoc.isActive,
-    });
+    };
+    const at = this.signToken(refreshedUser);
+    this.logAdminAccess('refresh', refreshedUser, meta);
     return {
       ...at,
       refresh_token: newToken,
       refresh_expires_at: expiresAt,
       cookie,
     };
+  }
+
+  async findUserForTwoFactor(userId: string) {
+    const user = await this.users
+      .findById(userId)
+      .select('+twoFactorSecret +twoFactorTempSecret')
+      .lean<AuthUserLike & { twoFactorEnabled?: boolean } | null>();
+    if (!user || !user.email || !user.role) {
+      throw new UnauthorizedException('Utilisateur introuvable');
+    }
+    return user;
+  }
+
+  async completeTwoFactorLogin(
+    userId: string,
+    meta?: { ua?: string; ip?: string },
+  ) {
+    const user = await this.findUserForTwoFactor(userId);
+    this.ensureAdminIpAllowed(user, meta?.ip);
+    const tokenUser: AuthUserLike = {
+      _id: user._id,
+      email: user.email,
+      role: user.role,
+      nom: user.nom,
+      isActive: user.isActive,
+      twoFactorEnabled: user.twoFactorEnabled,
+    };
+
+    const at = this.signToken(tokenUser);
+    const rt = await this.rts.generate(at.user.sub, 'user', meta);
+    this.logAdminAccess('login', tokenUser, meta);
+    await this.auditLogs.record({
+      userId: at.user.sub,
+      email: user.email,
+      event: 'admin_login_completed',
+      status: 'success',
+      role: String(user.role),
+      ip: meta?.ip,
+      userAgent: meta?.ua,
+      metadata: { via: 'password+totp' },
+    });
+    return { ...at, refresh_token: rt.token, refresh_expires_at: rt.expiresAt };
   }
 
   async requestPasswordReset(email: string) {

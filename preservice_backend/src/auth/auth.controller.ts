@@ -5,6 +5,7 @@ import {
   Get,
   HttpCode,
   HttpStatus,
+  Logger,
   Post,
   Req,
   Res,
@@ -17,6 +18,7 @@ import {
   ApiOkResponse,
   ApiOperation,
   ApiProperty,
+  ApiQuery,
   ApiTags,
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
@@ -28,6 +30,9 @@ import { TokenBlacklistService } from './token-blacklist.service';
 import { RefreshTokensService } from './refresh-tokens.service';
 import { ConfigService } from '@nestjs/config';
 import { UserRole } from 'src/users/entities/user.entity';
+import { Roles } from 'src/common/decorators/roles.decorator';
+import { TwoFactorService } from './two-factor.service';
+import { AdminAuditLogService } from './admin-audit-log.service';
 
 class LoginDto {
   @ApiProperty()
@@ -99,9 +104,22 @@ class ResetPasswordDto {
   new_password: string;
 }
 
+class TwoFactorCodeDto {
+  @ApiProperty()
+  @IsString()
+  code: string;
+}
+
+class VerifyTwoFactorLoginDto extends TwoFactorCodeDto {
+  @ApiProperty()
+  @IsString()
+  twoFactorToken: string;
+}
+
 type AuthReqUser = {
   sub?: string;
   exp?: number;
+  role?: 'user' | 'admin' | 'superadmin' | 'serveur';
   realm?: 'user' | 'serveur';
 };
 type AuthRequest = Request & { user?: AuthReqUser };
@@ -142,11 +160,15 @@ function normalizeRole(input?: string): UserRole | undefined {
 @ApiTags('Auth')
 @Controller('auth')
 export class AuthController {
+  private readonly logger = new Logger(AuthController.name);
+
   constructor(
     private readonly configService: ConfigService,
     private readonly auth: AuthService,
     private readonly blacklist: TokenBlacklistService,
     private readonly rts: RefreshTokensService,
+    private readonly twoFactor: TwoFactorService,
+    private readonly adminAuditLogs: AdminAuditLogService,
   ) {}
 
   // Petit helper pour poser correctement le cookie (cf. plus bas implémentation finale)
@@ -207,6 +229,32 @@ export class AuthController {
     @Res({ passthrough: true }) res: Response,
   ) {
     const meta = { ua: req.headers['user-agent'], ip: req.ip };
+    let userForLogin;
+    try {
+      userForLogin = await this.auth.validateUser(dto.email, dto.mot_passe);
+    } catch (error) {
+      await this.adminAuditLogs.record({
+        email: dto.email,
+        event: 'admin_login_attempt',
+        status: 'failure',
+        ip: req.ip,
+        userAgent: req.headers['user-agent'],
+        metadata: { reason: 'invalid_credentials' },
+      });
+      throw error;
+    }
+
+    if (this.twoFactor.requiresTwoFactor(userForLogin)) {
+      return this.twoFactor.createLoginChallenge(
+        {
+          _id: userForLogin._id,
+          email: userForLogin.email,
+          role: userForLogin.role,
+        },
+        meta,
+      );
+    }
+
     const result = await this.auth.login(dto.email, dto.mot_passe, meta);
     const frontendBase = (
       this.configService.get<string>('FRONTEND_BASE_URL') ||
@@ -216,6 +264,30 @@ export class AuthController {
     this.setRefreshCookie(res, result.refresh_token, result.refresh_expires_at);
 
     return { ...result, redirectTo: `${frontendBase}/dashboard` };
+  }
+
+  @Public()
+  @Post('2fa/verify-login')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Validation du code 2FA au login admin',
+    operationId: 'authVerifyTwoFactorLogin',
+  })
+  async verifyTwoFactorLogin(
+    @Body() dto: VerifyTwoFactorLoginDto,
+    @Req() req: AuthRequest,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    const meta = { ua: req.headers['user-agent'], ip: req.ip };
+    const challenge = await this.twoFactor.verifyLoginChallenge(
+      dto.twoFactorToken,
+      dto.code,
+      meta,
+    );
+    const result = await this.auth.completeTwoFactorLogin(challenge.userId, meta);
+    this.setRefreshCookie(res, result.refresh_token, result.refresh_expires_at);
+
+    return { ...result, redirectTo: `${this.configService.get<string>('FRONTEND_BASE_URL') || 'https://dashboard.nelagency.com'}/dashboard` };
   }
 
   @Public()
@@ -340,6 +412,84 @@ export class AuthController {
     return this.auth.resetPassword(dto.token, dto.new_password);
   }
 
+  @Get('2fa/status')
+  @Roles('admin', 'superadmin')
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'Statut de la double authentification admin',
+    operationId: 'authTwoFactorStatus',
+  })
+  async twoFactorStatus(@Req() req: AuthRequest) {
+    if (!req.user?.sub) throw new UnauthorizedException('Utilisateur introuvable');
+    return this.twoFactor.getStatus(req.user.sub);
+  }
+
+  @Post('2fa/setup')
+  @Roles('admin', 'superadmin')
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'Initialise la configuration de la double authentification admin',
+    operationId: 'authTwoFactorSetup',
+  })
+  async twoFactorSetup(@Req() req: AuthRequest) {
+    if (!req.user?.sub) throw new UnauthorizedException('Utilisateur introuvable');
+    return this.twoFactor.beginSetup(req.user.sub, {
+      ua: req.headers['user-agent'],
+      ip: req.ip,
+    });
+  }
+
+  @Post('2fa/enable')
+  @Roles('admin', 'superadmin')
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'Active la double authentification admin',
+    operationId: 'authTwoFactorEnable',
+  })
+  async twoFactorEnable(
+    @Req() req: AuthRequest,
+    @Body() dto: TwoFactorCodeDto,
+  ) {
+    if (!req.user?.sub) throw new UnauthorizedException('Utilisateur introuvable');
+    return this.twoFactor.enable(req.user.sub, dto.code, {
+      ua: req.headers['user-agent'],
+      ip: req.ip,
+    });
+  }
+
+  @Post('2fa/disable')
+  @Roles('admin', 'superadmin')
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'Désactive la double authentification admin',
+    operationId: 'authTwoFactorDisable',
+  })
+  async twoFactorDisable(
+    @Req() req: AuthRequest,
+    @Body() dto: TwoFactorCodeDto,
+  ) {
+    if (!req.user?.sub) throw new UnauthorizedException('Utilisateur introuvable');
+    return this.twoFactor.disable(req.user.sub, dto.code, {
+      ua: req.headers['user-agent'],
+      ip: req.ip,
+    });
+  }
+
+  @Get('admin-audit-logs')
+  @Roles('admin', 'superadmin')
+  @ApiBearerAuth()
+  @ApiQuery({ name: 'limit', required: false, type: Number })
+  @ApiOperation({
+    summary: 'Retourne les derniers logs d audit admin',
+    operationId: 'authAdminAuditLogs',
+  })
+  async getAdminAuditLogs(@Req() req: AuthRequest) {
+    if (!req.user?.sub) throw new UnauthorizedException('Utilisateur introuvable');
+    const raw = (req as Request & { query?: { limit?: string } }).query?.limit;
+    const limit = raw ? Number(raw) : 50;
+    return this.adminAuditLogs.list(limit);
+  }
+
   @Public()
   @ApiBearerAuth()
   @Post('logout')
@@ -364,6 +514,19 @@ export class AuthController {
     if (rt) await this.rts.revoke(rt);
     this.clearRefreshCookie(res);
 
+    if (req.user?.role === 'admin' || req.user?.role === 'superadmin') {
+      this.logger.log(
+        JSON.stringify({
+          type: 'admin_auth',
+          event: 'logout',
+          userId: req.user.sub,
+          role: req.user.role,
+          ip: req.ip,
+          at: new Date().toISOString(),
+        }),
+      );
+    }
+
     return { success: true };
   }
 
@@ -381,6 +544,19 @@ export class AuthController {
     const sub = req.user?.sub;
     if (sub) await this.rts.revokeAllForUser(sub);
     this.clearRefreshCookie(res);
+
+    if (req.user?.role === 'admin' || req.user?.role === 'superadmin') {
+      this.logger.log(
+        JSON.stringify({
+          type: 'admin_auth',
+          event: 'logout_all',
+          userId: req.user.sub,
+          role: req.user.role,
+          ip: req.ip,
+          at: new Date().toISOString(),
+        }),
+      );
+    }
 
     return { success: true };
   }

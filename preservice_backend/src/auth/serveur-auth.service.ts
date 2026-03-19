@@ -63,7 +63,7 @@ export class ServeurAuthService {
       access_token: this.jwt.sign(payload, {
         secret: accessSecret,
         expiresIn: toStringValue(
-          this.config.get<string | number>('auth.accessIn'),
+          this.config.get<string | number>('auth.accessIn') ?? '20m',
         ),
       }),
       user: payload,
