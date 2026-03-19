@@ -30,7 +30,7 @@ async function main() {
     });
     console.log('Envoyé:', info.messageId);
 }
-main().catch(err => {
+main().catch((err) => {
     console.error('ERREUR SMTP:', err?.response || err);
     process.exit(1);
 });

@@ -54,6 +54,13 @@ const mongoose_2 = require("mongoose");
 const refresh_tokens_service_1 = require("./refresh-tokens.service");
 const config_1 = require("@nestjs/config");
 const serveur_entity_1 = require("../serveur/entities/serveur.entity");
+function toStringValue(value) {
+    if (typeof value === 'number')
+        return value;
+    if (typeof value === 'string' && value.trim())
+        return value;
+    return undefined;
+}
 let ServeurAuthService = class ServeurAuthService {
     config;
     jwt;
@@ -66,32 +73,50 @@ let ServeurAuthService = class ServeurAuthService {
         this.rts = rts;
     }
     signToken(serveur) {
+        const accessSecret = this.config.get('auth.accessToken');
+        if (!accessSecret) {
+            throw new common_1.UnauthorizedException('Access token secret is not configured');
+        }
         const payload = {
-            sub: serveur.id?.toString() ?? serveur._id?.toString(),
+            sub: serveur.id?.toString() ?? String(serveur._id),
             email: serveur.email,
             role: 'serveur',
-            nom: `${serveur.prenom} ${serveur.nom}`,
+            nom: `${serveur.prenom ?? ''} ${serveur.nom ?? ''}`.trim(),
             isActive: serveur.isActive,
             realm: 'serveur',
         };
         return {
             access_token: this.jwt.sign(payload, {
-                secret: this.config.get('auth.accessToken'),
-                expiresIn: this.config.get('auth.accessIn'),
+                secret: accessSecret,
+                expiresIn: toStringValue(this.config.get('auth.accessIn') ?? '20m'),
             }),
             user: payload,
         };
     }
     async validateServeur(email, mot_passe) {
-        const doc = await this.serveurs.findOne({ email }).select('+mot_passe').lean(false);
+        const doc = await this.serveurs
+            .findOne({ email })
+            .select('+mot_passe')
+            .lean(false);
         if (!doc)
             throw new common_1.UnauthorizedException('Email ou mot de passe invalide');
-        const ok = await bcrypt.compare(mot_passe, doc.mot_passe);
+        const withPassword = doc;
+        const ok = await bcrypt.compare(mot_passe, withPassword.mot_passe);
         if (!ok)
             throw new common_1.UnauthorizedException('Mot de passe invalide');
         if (doc.isActive === false)
             throw new common_1.UnauthorizedException('Compte inactif');
-        return doc.toJSON();
+        const raw = doc.toObject();
+        if (!raw.email) {
+            throw new common_1.UnauthorizedException('Serveur invalide');
+        }
+        return {
+            _id: raw._id,
+            email: raw.email,
+            prenom: raw.prenom,
+            nom: raw.nom,
+            isActive: raw.isActive,
+        };
     }
     async login(email, mot_passe, meta) {
         const serveur = await this.validateServeur(email, mot_passe);
@@ -103,7 +128,15 @@ let ServeurAuthService = class ServeurAuthService {
         const s = await this.serveurs.findById(serveurId).lean();
         if (!s)
             throw new common_1.UnauthorizedException('Serveur introuvable');
-        const at = this.signToken(s);
+        if (!s.email)
+            throw new common_1.UnauthorizedException('Serveur invalide');
+        const at = this.signToken({
+            _id: s._id,
+            email: s.email,
+            prenom: s.prenom,
+            nom: s.nom,
+            isActive: s.isActive,
+        });
         return at.user;
     }
 };

@@ -1,7 +1,20 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
 import {
-  ApiBearerAuth, ApiTags, ApiOperation, ApiOkResponse, ApiCreatedResponse,
-  ApiUnauthorizedResponse, ApiBody
+  Controller,
+  Get,
+  Post,
+  Body,
+  Patch,
+  Param,
+  Delete,
+} from '@nestjs/common';
+import {
+  ApiBearerAuth,
+  ApiTags,
+  ApiOperation,
+  ApiOkResponse,
+  ApiCreatedResponse,
+  ApiUnauthorizedResponse,
+  ApiBody,
 } from '@nestjs/swagger';
 import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
@@ -18,7 +31,7 @@ export class UsersController {
   @Post()
   @ApiOperation({
     summary: "Création d'un utilisateur",
-    description: "Crée un nouvel utilisateur (rôle par défaut: user).",
+    description: 'Crée un nouvel utilisateur (rôle par défaut: user).',
     operationId: 'usersCreate',
   })
   @ApiBody({
@@ -31,13 +44,13 @@ export class UsersController {
           numero_tel: '+21620000099',
           adresse: 'Tunis',
           mot_passe: 'Passw0rd!',
-          role: 'admin'
-        }
-      }
-    }
+          role: 'admin',
+        },
+      },
+    },
   })
   @ApiCreatedResponse({ description: 'Utilisateur créé.' })
-  @ApiUnauthorizedResponse({ description: 'Non autorisé.' }) 
+  @ApiUnauthorizedResponse({ description: 'Non autorisé.' })
   @Roles('admin', 'superadmin')
   create(@Body() createUserDto: CreateUserDto) {
     return this.usersService.create(createUserDto);
@@ -65,7 +78,9 @@ export class UsersController {
     operationId: 'usersRolesMeta',
   })
   @ApiOkResponse({ description: 'Rôles disponibles.' })
-  rolesKV() { return this.usersService.rolesKV(); }
+  rolesKV() {
+    return this.usersService.rolesKV();
+  }
 
   @Get(':id')
   @ApiOperation({
@@ -93,10 +108,10 @@ export class UsersController {
           nom: 'Nadia Test (MAJ)',
           adresse: 'Sfax',
           role: 'superadmin',
-          isActive: true
-        }
-      }
-    }
+          isActive: true,
+        },
+      },
+    },
   })
   @ApiOkResponse({ description: 'Utilisateur mis à jour.' })
   @Roles('admin', 'superadmin')

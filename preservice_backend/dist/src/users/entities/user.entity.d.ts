@@ -13,6 +13,10 @@ export declare class User {
     mot_passe: string;
     isActive: boolean;
     role: UserRole;
+    twoFactorEnabled: boolean;
+    twoFactorSecret?: string;
+    twoFactorTempSecret?: string;
+    twoFactorEnabledAt?: Date;
 }
 export declare const UserSchema: import("mongoose").Schema<User, import("mongoose").Model<User, any, any, any, Document<unknown, any, User, any, {}> & User & {
     _id: import("mongoose").Types.ObjectId;

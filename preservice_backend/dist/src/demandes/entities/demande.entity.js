@@ -49,8 +49,16 @@ __decorate([
     __metadata("design:type", Number)
 ], Demande.prototype, "nb_serveurs", void 0);
 __decorate([
-    (0, swagger_1.ApiProperty)({ enum: DemandeStatusEnum, default: DemandeStatusEnum.en_attente }),
-    (0, mongoose_1.Prop)({ type: String, enum: Object.values(DemandeStatusEnum), default: DemandeStatusEnum.en_attente, index: true }),
+    (0, swagger_1.ApiProperty)({
+        enum: DemandeStatusEnum,
+        default: DemandeStatusEnum.en_attente,
+    }),
+    (0, mongoose_1.Prop)({
+        type: String,
+        enum: Object.values(DemandeStatusEnum),
+        default: DemandeStatusEnum.en_attente,
+        index: true,
+    }),
     __metadata("design:type", String)
 ], Demande.prototype, "status", void 0);
 exports.Demande = Demande = __decorate([

@@ -20,7 +20,7 @@ export declare class RefreshTokensService {
             httpOnly: boolean;
             secure: boolean;
             sameSite: "none" | "lax";
-            domain: any;
+            domain: string | undefined;
             path: string;
             expires: Date;
         };
@@ -36,11 +36,11 @@ export declare class RefreshTokensService {
             httpOnly: boolean;
             secure: boolean;
             sameSite: "none" | "lax";
-            domain: any;
+            domain: string | undefined;
             path: string;
             expires: Date;
         };
-        accountType: "serveur" | "user";
+        accountType: "user" | "serveur";
     }>;
     revoke(token: string): Promise<void>;
     revokeAllForUser(userId: string, accountType?: 'user' | 'serveur'): Promise<void>;
@@ -48,7 +48,7 @@ export declare class RefreshTokensService {
         httpOnly: boolean;
         secure: boolean;
         sameSite: "none" | "lax";
-        domain: any;
+        domain: string | undefined;
         path: string;
         expires: Date;
     };

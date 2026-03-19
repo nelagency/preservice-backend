@@ -1,20 +1,30 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { AssignDto, BulkAssignDto } from './dto/create-participation.dto';
 import { InjectModel } from '@nestjs/mongoose';
 import { EventDocument, EventRoleEnum } from 'src/events/entities/event.entity';
 import { Model, Types } from 'mongoose';
-import { AssignmentStatus, CandidatureStatus, Participation, ParticipationDocument } from './entities/participation.entity';
+import {
+  AssignmentStatus,
+  CandidatureStatus,
+  Participation,
+  ParticipationDocument,
+} from './entities/participation.entity';
 import { MailService } from 'src/mail/mail.service';
 import { NotificationsService } from 'src/notifications/notifications.service';
 
 @Injectable()
 export class ParticipationService {
   constructor(
-    @InjectModel(Participation.name) private model: Model<ParticipationDocument>,
+    @InjectModel(Participation.name)
+    private model: Model<ParticipationDocument>,
     @InjectModel(Event.name) private eventModel: Model<EventDocument>,
     private readonly mail: MailService,
     private readonly notifications: NotificationsService,
-  ) { }
+  ) {}
 
   async apply(eventId: string, serveurId: string, notes?: string) {
     const event = await this.eventModel.findById(eventId).lean();
@@ -35,7 +45,12 @@ export class ParticipationService {
     }
   }
 
-  async applyEvent(eventId: string, serveurId: string, notes?: string, adminIds?: string[]) {
+  async applyEvent(
+    eventId: string,
+    serveurId: string,
+    notes?: string,
+    adminIds?: string[],
+  ) {
     const event = await this.eventModel.findById(eventId).lean();
     if (!event) throw new NotFoundException('Event not found');
 
@@ -62,23 +77,33 @@ export class ParticipationService {
     }
   }
 
-  async setCandidatureStatus(eventId: string, participationId: string, status: CandidatureStatus) {
-    const before = await this.model.findById(participationId).select('candidatureStatus').lean();
+  async setCandidatureStatus(
+    eventId: string,
+    participationId: string,
+    status: CandidatureStatus,
+  ) {
+    const before = await this.model
+      .findById(participationId)
+      .select('candidatureStatus')
+      .lean();
 
-    const doc = await this.model.findByIdAndUpdate(
-      participationId,
-      {
-        candidatureStatus: status,
-        approvedAt: status === CandidatureStatus.approved ? new Date() : undefined,
-      },
-      { new: true }
-    )
+    const doc = await this.model
+      .findByIdAndUpdate(
+        participationId,
+        {
+          candidatureStatus: status,
+          approvedAt:
+            status === CandidatureStatus.approved ? new Date() : undefined,
+        },
+        { new: true },
+      )
       .populate('serveur', 'email nom prenom')
       .lean();
     if (!doc) throw new NotFoundException('Participation not found');
     // Envoi mail si transition vers "approved"
     const justApproved =
-      status === CandidatureStatus.approved && before?.candidatureStatus !== CandidatureStatus.approved;
+      status === CandidatureStatus.approved &&
+      before?.candidatureStatus !== CandidatureStatus.approved;
 
     if (justApproved) {
       const event = await this.eventModel.findById(eventId).lean();
@@ -97,22 +122,35 @@ export class ParticipationService {
     return doc;
   }
 
-  async setCandidatureStatusEvent(eventId: string, participationId: string, status: CandidatureStatus, adminId: string,) {
-    const before = await this.model.findById(participationId).select('candidatureStatus').lean();
+  async setCandidatureStatusEvent(
+    eventId: string,
+    participationId: string,
+    status: CandidatureStatus,
+    adminId: string,
+  ) {
+    const before = await this.model
+      .findById(participationId)
+      .select('candidatureStatus')
+      .lean();
 
-    const doc = await this.model.findByIdAndUpdate(
-      participationId,
-      {
-        candidatureStatus: status,
-        approvedAt: status === CandidatureStatus.approved ? new Date() : undefined,
-      },
-      { new: true }
-    ).populate('serveur', 'email nom prenom').lean();
+    const doc = await this.model
+      .findByIdAndUpdate(
+        participationId,
+        {
+          candidatureStatus: status,
+          approvedAt:
+            status === CandidatureStatus.approved ? new Date() : undefined,
+        },
+        { new: true },
+      )
+      .populate('serveur', 'email nom prenom')
+      .lean();
 
     if (!doc) throw new NotFoundException('Participation not found');
     // Envoi mail si transition vers "approved"
     const justApproved =
-      status === CandidatureStatus.approved && before?.candidatureStatus !== CandidatureStatus.approved;
+      status === CandidatureStatus.approved &&
+      before?.candidatureStatus !== CandidatureStatus.approved;
 
     const serveurIdStr =
       (doc as any)?.serveur?._id?.toString?.() ??
@@ -171,21 +209,33 @@ export class ParticipationService {
         assignmentStatus: dto.assignmentStatus ?? AssignmentStatus.provisional,
         assignedAt: new Date(),
       },
-      { new: true }
+      { new: true },
     );
-    if (!doc) throw new BadRequestException('Participation introuvable ou non approuvée');
+    if (!doc)
+      throw new BadRequestException(
+        'Participation introuvable ou non approuvée',
+      );
     return doc;
   }
 
-  private async ensureCapacity(eventId: string, event: any, role: EventRoleEnum, excludeParticipationId?: string) {
+  private async ensureCapacity(
+    eventId: string,
+    event: any,
+    role: EventRoleEnum,
+    excludeParticipationId?: string,
+  ) {
     const req = (event.positions ?? []).find((p: any) => p.role === role);
     if (!req?.capacity) return; // pas de limite
 
     const count = await this.model.countDocuments({
       event: eventId,
       role,
-      assignmentStatus: { $in: [AssignmentStatus.provisional, AssignmentStatus.confirmed] },
-      ...(excludeParticipationId ? { _id: { $ne: excludeParticipationId } } : {}),
+      assignmentStatus: {
+        $in: [AssignmentStatus.provisional, AssignmentStatus.confirmed],
+      },
+      ...(excludeParticipationId
+        ? { _id: { $ne: excludeParticipationId } }
+        : {}),
     });
     if (count >= req.capacity) {
       throw new BadRequestException(`Capacité atteinte pour le poste ${role}`);
@@ -196,14 +246,14 @@ export class ParticipationService {
   async confirmAll(eventId: string) {
     await this.model.updateMany(
       { event: eventId, assignmentStatus: AssignmentStatus.provisional },
-      { $set: { assignmentStatus: AssignmentStatus.confirmed } }
+      { $set: { assignmentStatus: AssignmentStatus.confirmed } },
     );
   }
 
   async confirmAllEvent(eventId: string) {
     await this.model.updateMany(
       { event: eventId, assignmentStatus: AssignmentStatus.provisional },
-      { $set: { assignmentStatus: AssignmentStatus.confirmed } }
+      { $set: { assignmentStatus: AssignmentStatus.confirmed } },
     );
   }
 
@@ -220,7 +270,9 @@ export class ParticipationService {
     for (const role of Object.keys(byRole) as EventRoleEnum[]) {
       const req = (event.positions ?? []).find((p: any) => p.role === role);
       if (req?.capacity && byRole[role] > req.capacity) {
-        throw new BadRequestException(`Dépassement de capacité pour ${role} (${byRole[role]}>${req.capacity})`);
+        throw new BadRequestException(
+          `Dépassement de capacité pour ${role} (${byRole[role]}>${req.capacity})`,
+        );
       }
     }
 
@@ -231,7 +283,7 @@ export class ParticipationService {
       await this.model.updateMany(
         { event: eventId },
         { $set: { role: null, assignmentStatus: AssignmentStatus.none } },
-        { session }
+        { session },
       );
 
       // 2) appliquer les nouvelles (upsert)
@@ -242,11 +294,12 @@ export class ParticipationService {
             $set: {
               candidatureStatus: CandidatureStatus.approved, // on suppose validé si affecté
               role: a.role,
-              assignmentStatus: a.assignmentStatus ?? AssignmentStatus.provisional,
+              assignmentStatus:
+                a.assignmentStatus ?? AssignmentStatus.provisional,
               assignedAt: new Date(),
             },
           },
-          { upsert: true, session }
+          { upsert: true, session },
         );
       }
     });
@@ -256,7 +309,10 @@ export class ParticipationService {
   /** KPIs pour panneau */
   async kpis(eventId: string) {
     const [confirmed, pending, assigned, totalReq] = await Promise.all([
-      this.model.countDocuments({ event: eventId, assignmentStatus: AssignmentStatus.confirmed }),
+      this.model.countDocuments({
+        event: eventId,
+        assignmentStatus: AssignmentStatus.confirmed,
+      }),
       this.model.countDocuments({
         event: eventId,
         candidatureStatus: CandidatureStatus.pending,
@@ -264,7 +320,9 @@ export class ParticipationService {
       this.model.countDocuments({
         event: eventId,
         role: { $ne: null },
-        assignmentStatus: { $in: [AssignmentStatus.provisional, AssignmentStatus.confirmed] },
+        assignmentStatus: {
+          $in: [AssignmentStatus.provisional, AssignmentStatus.confirmed],
+        },
       }),
       this.totalSlots(eventId),
     ]);
@@ -275,7 +333,10 @@ export class ParticipationService {
 
   private async totalSlots(eventId: string) {
     const event = await this.eventModel.findById(eventId).lean();
-    const sum = (event?.positions ?? []).reduce((acc: number, p: any) => acc + (p.capacity ?? 0), 0);
+    const sum = (event?.positions ?? []).reduce(
+      (acc: number, p: any) => acc + (p.capacity ?? 0),
+      0,
+    );
     // fallback si pas de positions configurées: total = affectations existantes
     if (!sum) {
       return this.model.countDocuments({ event: eventId });
@@ -291,7 +352,7 @@ export class ParticipationService {
       .find({ event: new Types.ObjectId(eventId) })
       .populate('serveur', 'nom prenom status email')
       .populate('event')
-      .lean()
+      .lean();
   }
 
   async findByServeur(serveurId: string) {
@@ -301,7 +362,6 @@ export class ParticipationService {
     return this.model
       .find({ serveur: new Types.ObjectId(serveurId) })
       .populate('serveur', 'event')
-      .lean()
+      .lean();
   }
-
 }

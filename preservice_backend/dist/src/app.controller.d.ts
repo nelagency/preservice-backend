@@ -7,4 +7,12 @@ export declare class AppController {
         ok: boolean;
         ts: number;
     };
+    cronMaintenance(key?: string): Promise<{
+        job: string;
+        revokedRetentionDays: number;
+        blacklistRetentionDays: number;
+        revokedDeleted: number;
+        blacklistDeleted: number;
+        at: string;
+    }>;
 }

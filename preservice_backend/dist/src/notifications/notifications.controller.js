@@ -18,7 +18,8 @@ const notifications_service_1 = require("./notifications.service");
 const jwt_auth_guard_1 = require("../common/guards/jwt-auth.guard");
 function inferModel(req) {
     const realm = String(req?.user?.realm ?? req?.user?.aud ?? '').toLowerCase();
-    const isServeur = realm.includes('serveur') || (!req?.user?.role && (req?.user?.serveurId || req?.user?.srvId));
+    const isServeur = realm.includes('serveur') ||
+        (!req?.user?.role && (req?.user?.serveurId || req?.user?.srvId));
     return isServeur ? 'Serveur' : 'User';
 }
 let NotificationsController = class NotificationsController {

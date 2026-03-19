@@ -88,7 +88,7 @@ let EmailService = EmailService_1 = class EmailService {
                 auth: process.env.SMTP_USER && process.env.SMTP_PASS
                     ? { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS }
                     : undefined,
-                ...common
+                ...common,
             });
     }
     dateOnly(d) {
@@ -154,7 +154,12 @@ let EmailService = EmailService_1 = class EmailService {
             return;
         }
         try {
-            const info = await this.transporter.sendMail({ from: this.from, to, subject, html });
+            const info = await this.transporter.sendMail({
+                from: this.from,
+                to,
+                subject,
+                html,
+            });
             this.log.log(`email sent -> ${to} (${info.messageId})`);
         }
         catch (e) {
@@ -174,20 +179,23 @@ let EmailService = EmailService_1 = class EmailService {
         await this.send(to, subject, html);
     }
     async participationApproved(serveur, event, opts) {
-        const subject = opts?.subject ?? `Votre candidature à “${event.title ?? 'Évènement'}” est confirmée`;
+        const subject = opts?.subject ??
+            `Votre candidature à “${event.title ?? 'Évènement'}” est confirmée`;
         const html = this.layoutHTML({
             title: subject,
-            greeting: `Bonjour ${[serveur.nom, serveur.prenom].filter(Boolean).join(' ') || ''}`.trim() || 'Bonjour,',
+            greeting: `Bonjour ${[serveur.nom, serveur.prenom].filter(Boolean).join(' ') || ''}`.trim() ||
+                'Bonjour,',
             intro: opts?.intro ??
                 `Bonne nouvelle ! Votre candidature à l’évènement <strong>${event.title ?? '—'}</strong> a été <strong>confirmée</strong>.`,
             details: {
-                'Évènement': event.title ?? '—',
-                'Date': this.dateOnly(event.startdate ?? event.date),
-                'Lieu': event.location ?? '—',
+                Évènement: event.title ?? '—',
+                Date: this.dateOnly(event.startdate ?? event.date),
+                Lieu: event.location ?? '—',
             },
             ctaLabel: opts?.ctaLabel ?? 'Ouvrir mon espace',
             ctaHref: opts?.ctaHref ?? `${this.appUrl}/serveur`,
-            outro: opts?.outro ?? `Vous pouvez consulter vos missions et vos détails depuis votre espace serveur.`,
+            outro: opts?.outro ??
+                `Vous pouvez consulter vos missions et vos détails depuis votre espace serveur.`,
         });
         await this.send(serveur.email, subject, html);
     }
@@ -195,9 +203,9 @@ let EmailService = EmailService_1 = class EmailService {
         await this.generic(to, `Nouvel événement publié : ${event.title ?? ''}`, {
             intro: `Un nouvel évènement a été publié.`,
             details: {
-                'Évènement': event.title ?? '—',
-                'Date': this.dateOnly(event.startdate ?? event.date),
-                'Lieu': event.location ?? '—',
+                Évènement: event.title ?? '—',
+                Date: this.dateOnly(event.startdate ?? event.date),
+                Lieu: event.location ?? '—',
             },
             ctaLabel: 'Voir mes événements',
             ctaHref: `${this.appUrl}/serveur`,
@@ -207,9 +215,9 @@ let EmailService = EmailService_1 = class EmailService {
         await this.generic(to, `Demande de participation reçue`, {
             intro: `Un serveur a postulé à un événement.`,
             details: {
-                'Serveur': [serveur?.nom, serveur?.prenom].filter(Boolean).join(' ') || '—',
-                'Évènement': event?.title ?? '—',
-                'Date': this.dateOnly(event?.startdate ?? event?.date),
+                Serveur: [serveur?.nom, serveur?.prenom].filter(Boolean).join(' ') || '—',
+                Évènement: event?.title ?? '—',
+                Date: this.dateOnly(event?.startdate ?? event?.date),
             },
             ctaLabel: 'Gérer les candidatures',
             ctaHref: `${this.appUrl}/admin/evenements`,
@@ -219,8 +227,8 @@ let EmailService = EmailService_1 = class EmailService {
         await this.generic(to, `Feuille d’heures soumise`, {
             intro: `Un serveur a soumis ses horaires.`,
             details: {
-                'Serveur': [serveur?.nom, serveur?.prenom].filter(Boolean).join(' ') || '—',
-                'Évènement': event?.title ?? '—',
+                Serveur: [serveur?.nom, serveur?.prenom].filter(Boolean).join(' ') || '—',
+                Évènement: event?.title ?? '—',
             },
             ctaLabel: 'Revoir les feuilles',
             ctaHref: `${this.appUrl}/admin/timesheets`,
@@ -231,7 +239,7 @@ let EmailService = EmailService_1 = class EmailService {
             intro: status === 'approved'
                 ? `Votre feuille d’heures a été approuvée.`
                 : `Votre feuille d’heures a été rejetée.`,
-            details: comment ? { 'Commentaire': comment } : undefined,
+            details: comment ? { Commentaire: comment } : undefined,
             ctaLabel: 'Voir mes feuilles',
             ctaHref: `${this.appUrl}/serveur/timesheets`,
         });
@@ -241,7 +249,7 @@ let EmailService = EmailService_1 = class EmailService {
             intro: finalize
                 ? `Le paiement de votre feuille d’heures a été finalisé.`
                 : `Un paiement partiel a été enregistré.`,
-            details: { 'Montant': `${amount} TND` },
+            details: { Montant: `${amount} TND` },
             ctaLabel: 'Voir mes paiements',
             ctaHref: `${this.appUrl}/serveur/timesheets`,
         });

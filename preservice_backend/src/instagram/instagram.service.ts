@@ -1,18 +1,25 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
-import { InstagramPost, InstagramPostDocument } from './entities/instagram-post.entity';
+import {
+  InstagramPost,
+  InstagramPostDocument,
+} from './entities/instagram-post.entity';
 import { CreateInstagramPostDto } from './dto/create-instagram-post.dto';
 import { UpdateInstagramPostDto } from './dto/update-instagram-post.dto';
 
 @Injectable()
 export class InstagramService {
   constructor(
-    @InjectModel(InstagramPost.name) private readonly model: Model<InstagramPostDocument>,
+    @InjectModel(InstagramPost.name)
+    private readonly model: Model<InstagramPostDocument>,
   ) {}
 
   findAll() {
-    return this.model.find({ isActive: true }).sort({ postedAt: -1, createdAt: -1 }).lean();
+    return this.model
+      .find({ isActive: true })
+      .sort({ postedAt: -1, createdAt: -1 })
+      .lean();
   }
 
   async create(dto: CreateInstagramPostDto) {

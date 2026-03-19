@@ -1,5 +1,11 @@
 import { Body, Controller, Get, Param, Patch, Post } from '@nestjs/common';
-import { ApiBearerAuth, ApiBody, ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
+import {
+  ApiBearerAuth,
+  ApiBody,
+  ApiOkResponse,
+  ApiOperation,
+  ApiTags,
+} from '@nestjs/swagger';
 import { Public } from 'src/common/decorators/public.decorator';
 import { Roles } from 'src/common/decorators/roles.decorator';
 import { CreateServiceItemDto } from './dto/create-service-item.dto';
@@ -10,7 +16,9 @@ import { ServicesContentService } from './services-content.service';
 @ApiBearerAuth()
 @Controller('services')
 export class ServicesContentController {
-  constructor(private readonly servicesContentService: ServicesContentService) {}
+  constructor(
+    private readonly servicesContentService: ServicesContentService,
+  ) {}
 
   @Public()
   @Get()
@@ -28,7 +36,8 @@ export class ServicesContentController {
   @Roles('admin', 'superadmin')
   @ApiOperation({
     summary: 'Lister tous les services (admin)',
-    description: 'Retourne tous les services incluant inactifs pour le dashboard.',
+    description:
+      'Retourne tous les services incluant inactifs pour le dashboard.',
     operationId: 'servicesContentFindAllAdmin',
   })
   @ApiOkResponse({ description: 'Liste complète des services.' })
@@ -60,4 +69,3 @@ export class ServicesContentController {
     return this.servicesContentService.update(id, dto);
   }
 }
-

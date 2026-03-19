@@ -10,40 +10,44 @@ const swagger_1 = require("@nestjs/swagger");
 const all_exceptions_filter_1 = require("./common/all-exceptions.filter");
 const cookie_parser_1 = __importDefault(require("cookie-parser"));
 require("dotenv/config");
+const security_utils_1 = require("./common/security.utils");
 async function bootstrap() {
     const app = await core_1.NestFactory.create(app_module_1.AppModule);
+    const expressApp = app.getHttpAdapter().getInstance();
+    expressApp.set('trust proxy', 1);
+    expressApp.disable('x-powered-by');
     app.useLogger(['error', 'warn', 'log', 'debug']);
     app.setGlobalPrefix('api');
     app.useGlobalPipes(new common_1.ValidationPipe({
         whitelist: true,
         forbidNonWhitelisted: true,
-        transform: true
+        transform: true,
     }));
     app.useGlobalFilters(new all_exceptions_filter_1.AllExceptionsFilter());
     app.use((0, cookie_parser_1.default)());
-    const deployedOrigin = (process.env.BACKEND_PUBLIC_URL || process.env.RENDER_EXTERNAL_URL || '').replace(/\/$/, '');
-    const allowedOrigins = new Set([
-        'http://localhost:3000',
-        'http://localhost:3001',
-        'http://127.0.0.1:3000',
-        'http://127.0.0.1:3001',
-        'https://prest-service-front-ashen.vercel.app',
-        'https://dasboard.nelagency.com',
-        'https://dashboard.nelagency.com'
-    ]);
-    if (deployedOrigin)
-        allowedOrigins.add(deployedOrigin);
+    const allowedOrigins = (0, security_utils_1.getAllowedOrigins)();
+    app.use((req, res, next) => {
+        res.setHeader('X-Frame-Options', 'DENY');
+        res.setHeader('X-Content-Type-Options', 'nosniff');
+        res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+        res.setHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=(), browsing-topics=()');
+        res.setHeader('Content-Security-Policy', "default-src 'none'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'");
+        res.setHeader('Cross-Origin-Resource-Policy', 'same-site');
+        if (req.secure) {
+            res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains; preload');
+        }
+        const ip = (0, security_utils_1.getClientIp)(req);
+        if (req.path.startsWith('/api/docs') && !(0, security_utils_1.isAllowedAdminIp)(ip)) {
+            res.status(403).json({ message: 'Access denied from this IP' });
+            return;
+        }
+        next();
+    });
     app.enableCors({
         origin: (origin, cb) => {
             if (!origin)
                 return cb(null, true);
-            if (/^https:\/\/[a-z0-9-]+\.ngrok-free\.app$/i.test(origin)) {
-                return cb(null, true);
-            }
-            if (/^https:\/\/[a-z0-9-]+\.onrender\.com$/i.test(origin)) {
-                return cb(null, true);
-            }
-            if (allowedOrigins.has(origin))
+            if ((0, security_utils_1.isOriginAllowed)(origin, allowedOrigins))
                 return cb(null, true);
             return cb(new Error(`CORS blocked for origin: ${origin}`), false);
         },
@@ -53,10 +57,18 @@ async function bootstrap() {
     });
     const httpAdapter = app.getHttpAdapter();
     httpAdapter.get('/', (_req, res) => {
-        res.status(200).json({ service: 'preservice-backend', status: 'ok', docs: '/api/docs' });
+        res.status(200).json({
+            service: 'preservice-backend',
+            status: 'ok',
+            docs: '/api/docs',
+        });
     });
     httpAdapter.get('/api', (_req, res) => {
-        res.status(200).json({ service: 'preservice-backend', status: 'ok', docs: '/api/docs' });
+        res.status(200).json({
+            service: 'preservice-backend',
+            status: 'ok',
+            docs: '/api/docs',
+        });
     });
     const config = new swagger_1.DocumentBuilder()
         .setTitle('PrestService API')

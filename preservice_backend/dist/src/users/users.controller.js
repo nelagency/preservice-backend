@@ -31,7 +31,9 @@ let UsersController = class UsersController {
     findAll() {
         return this.usersService.findAll();
     }
-    rolesKV() { return this.usersService.rolesKV(); }
+    rolesKV() {
+        return this.usersService.rolesKV();
+    }
     findOne(id) {
         return this.usersService.findOne(id);
     }
@@ -47,7 +49,7 @@ __decorate([
     (0, common_1.Post)(),
     (0, swagger_1.ApiOperation)({
         summary: "Création d'un utilisateur",
-        description: "Crée un nouvel utilisateur (rôle par défaut: user).",
+        description: 'Crée un nouvel utilisateur (rôle par défaut: user).',
         operationId: 'usersCreate',
     }),
     (0, swagger_1.ApiBody)({
@@ -60,10 +62,10 @@ __decorate([
                     numero_tel: '+21620000099',
                     adresse: 'Tunis',
                     mot_passe: 'Passw0rd!',
-                    role: 'admin'
-                }
-            }
-        }
+                    role: 'admin',
+                },
+            },
+        },
     }),
     (0, swagger_1.ApiCreatedResponse)({ description: 'Utilisateur créé.' }),
     (0, swagger_1.ApiUnauthorizedResponse)({ description: 'Non autorisé.' }),
@@ -101,7 +103,6 @@ __decorate([
     __metadata("design:returntype", void 0)
 ], UsersController.prototype, "rolesKV", null);
 __decorate([
-    (0, public_decorator_1.Public)(),
     (0, common_1.Get)(':id'),
     (0, swagger_1.ApiOperation)({
         summary: "Détail d'un utilisateur",
@@ -116,7 +117,6 @@ __decorate([
     __metadata("design:returntype", void 0)
 ], UsersController.prototype, "findOne", null);
 __decorate([
-    (0, public_decorator_1.Public)(),
     (0, common_1.Patch)(':id'),
     (0, swagger_1.ApiOperation)({
         summary: "Mise à jour d'un utilisateur",
@@ -131,12 +131,13 @@ __decorate([
                     nom: 'Nadia Test (MAJ)',
                     adresse: 'Sfax',
                     role: 'superadmin',
-                    isActive: true
-                }
-            }
-        }
+                    isActive: true,
+                },
+            },
+        },
     }),
     (0, swagger_1.ApiOkResponse)({ description: 'Utilisateur mis à jour.' }),
+    (0, roles_decorator_1.Roles)('admin', 'superadmin'),
     __param(0, (0, common_1.Param)('id')),
     __param(1, (0, common_1.Body)()),
     __metadata("design:type", Function),

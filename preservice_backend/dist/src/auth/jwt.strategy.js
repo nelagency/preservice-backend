@@ -15,35 +15,35 @@ const passport_1 = require("@nestjs/passport");
 const passport_jwt_1 = require("passport-jwt");
 const token_blacklist_service_1 = require("./token-blacklist.service");
 const config_1 = require("@nestjs/config");
-function getBearer(req) {
-    const h = req?.headers?.authorization || '';
-    const [type, token] = h.split(' ');
-    return type?.toLowerCase() === 'bearer' && token ? token : null;
+function bearerFromRequest(req) {
+    const auth = req.headers.authorization;
+    if (!auth)
+        return null;
+    const [type, token] = auth.split(' ');
+    if (!type || !token)
+        return null;
+    return type.toLowerCase() === 'bearer' ? token : null;
 }
 let JwtStrategy = class JwtStrategy extends (0, passport_1.PassportStrategy)(passport_jwt_1.Strategy, 'jwt') {
-    configService;
     blacklist;
     constructor(configService, blacklist) {
         super({
-            jwtFromRequest: passport_jwt_1.ExtractJwt.fromAuthHeaderAsBearerToken(),
-            secretOrKey: configService.get('auth.accessToken'),
+            jwtFromRequest: (req) => bearerFromRequest(req),
+            secretOrKey: configService.get('auth.accessToken') ?? '',
             ignoreExpiration: false,
-            PassportStrategy: true,
-            passReqToCallback: true
+            passReqToCallback: true,
         });
-        this.configService = configService;
         this.blacklist = blacklist;
     }
     async validate(req, payload) {
         if (!req)
-            throw new common_1.UnauthorizedException('Requête introuvable');
-        const extractor = passport_jwt_1.ExtractJwt.fromAuthHeaderAsBearerToken();
-        const token = extractor(req);
+            throw new common_1.UnauthorizedException('Requete introuvable');
+        const token = bearerFromRequest(req);
         if (!token)
             throw new common_1.UnauthorizedException('Token manquant');
         const isRevoked = await this.blacklist.has(token);
         if (isRevoked)
-            throw new common_1.UnauthorizedException('Token révoqué');
+            throw new common_1.UnauthorizedException('Token revoque');
         return payload;
     }
 };

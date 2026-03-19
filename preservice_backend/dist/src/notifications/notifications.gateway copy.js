@@ -35,11 +35,15 @@ let NotificationsGateway = NotificationsGateway_1 = class NotificationsGateway {
     }
     async handleConnection(client) {
         try {
-            const raw = (client.handshake.auth?.token ?? client.handshake.query?.token ?? '');
+            const raw = (client.handshake.auth?.token ??
+                client.handshake.query?.token ??
+                '');
             if (!raw)
                 return client.disconnect(true);
             const token = raw.startsWith('Bearer ') ? raw.slice(7) : raw;
-            const payload = this.jwt.verify(token, { secret: process.env.ACCESS_JWT_SECRET });
+            const payload = this.jwt.verify(token, {
+                secret: process.env.ACCESS_JWT_SECRET,
+            });
             const userId = payload.sub;
             if (!userId)
                 return client.disconnect(true);
@@ -51,7 +55,7 @@ let NotificationsGateway = NotificationsGateway_1 = class NotificationsGateway {
         }
     }
     broadcast(userIds, msg) {
-        userIds.forEach(uid => this.io.to(`user:${uid}`).emit('notify', msg));
+        userIds.forEach((uid) => this.io.to(`user:${uid}`).emit('notify', msg));
     }
 };
 exports.NotificationsGateway = NotificationsGateway;
@@ -63,7 +67,9 @@ exports.NotificationsGateway = NotificationsGateway = NotificationsGateway_1 = _
     (0, websockets_1.WebSocketGateway)({
         namespace: '/ws',
         cors: {
-            origin: (process.env.WS_CORS_ORIGINS || '*').split(',').map(s => s.trim()),
+            origin: (process.env.WS_CORS_ORIGINS || '*')
+                .split(',')
+                .map((s) => s.trim()),
             credentials: true,
         },
     }),

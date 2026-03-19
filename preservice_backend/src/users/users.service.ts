@@ -8,7 +8,7 @@ import { User, UserDocument, UserRole } from './entities/user.entity';
 
 @Injectable()
 export class UsersService {
-  constructor(@InjectModel(User.name) private model: Model<UserDocument>) { }
+  constructor(@InjectModel(User.name) private model: Model<UserDocument>) {}
 
   async create(dto: CreateUserDto) {
     // le pre('save') hashera automatiquement
@@ -33,7 +33,9 @@ export class UsersService {
       const salt = await bcrypt.genSalt(10);
       payload.mot_passe = await bcrypt.hash(dto.mot_passe, salt);
     }
-    const updated = await this.model.findByIdAndUpdate(id, payload, { new: true }).lean();
+    const updated = await this.model
+      .findByIdAndUpdate(id, payload, { new: true })
+      .lean();
     if (!updated) throw new NotFoundException('User not found');
     return updated;
   }

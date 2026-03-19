@@ -30,8 +30,12 @@ let DemandesController = class DemandesController {
     findAll() {
         return this.demandesService.findAll();
     }
-    typesKV() { return this.demandesService.typesKV(); }
-    statusesKV() { return this.demandesService.statusesKV(); }
+    typesKV() {
+        return this.demandesService.typesKV();
+    }
+    statusesKV() {
+        return this.demandesService.statusesKV();
+    }
     findOne(id) {
         return this.demandesService.findOne(id);
     }
@@ -56,14 +60,14 @@ __decorate([
         examples: {
             default: {
                 value: {
-                    client: "665400000000000000000001",
-                    type: "Mariages",
-                    date_proposee: "2025-12-20T17:00:00.000Z",
+                    client: '665400000000000000000001',
+                    type: 'Mariages',
+                    date_proposee: '2025-12-20T17:00:00.000Z',
                     nb_serveurs: 5,
-                    status: "en_attente"
-                }
-            }
-        }
+                    status: 'en_attente',
+                },
+            },
+        },
     }),
     (0, swagger_1.ApiCreatedResponse)({ description: 'Demande créée.' }),
     __param(0, (0, common_1.Body)()),
@@ -99,7 +103,7 @@ __decorate([
 ], DemandesController.prototype, "typesKV", null);
 __decorate([
     (0, public_decorator_1.Public)(),
-    (0, common_1.Get)('meta/types'),
+    (0, common_1.Get)('meta/statuses'),
     (0, swagger_1.ApiOperation)({
         summary: 'Statuts de demande',
         description: 'Retourne les statuts possibles de demande sous forme { key, value }.',
@@ -115,7 +119,7 @@ __decorate([
     (0, common_1.Get)(':id'),
     (0, swagger_1.ApiOperation)({
         summary: "Détail d'une demande",
-        description: "Retourne une demande par identifiant.",
+        description: 'Retourne une demande par identifiant.',
         operationId: 'demandesFindOne',
     }),
     (0, swagger_1.ApiOkResponse)({ description: 'Détail de la demande.' }),
@@ -135,16 +139,16 @@ __decorate([
     (0, swagger_1.ApiBody)({
         type: update_demande_dto_1.UpdateDemandeDto,
         examples: {
-            statusOnly: { value: { status: "confirme" } },
+            statusOnly: { value: { status: 'confirme' } },
             full: {
                 value: {
-                    type: "Buffets",
-                    date_proposee: "2025-12-22T19:00:00.000Z",
+                    type: 'Buffets',
+                    date_proposee: '2025-12-22T19:00:00.000Z',
                     nb_serveurs: 7,
-                    status: "en_attente"
-                }
-            }
-        }
+                    status: 'en_attente',
+                },
+            },
+        },
     }),
     (0, swagger_1.ApiOkResponse)({ description: 'Demande mise à jour.' }),
     __param(0, (0, common_1.Param)('id')),

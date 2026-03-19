@@ -14,7 +14,10 @@ let StreamService = class StreamService {
     async createDirectUpload() {
         const resp = await fetch(`https://api.cloudflare.com/client/v4/accounts/${this.accountId}/stream/direct_upload`, {
             method: 'POST',
-            headers: { 'Authorization': `Bearer ${this.apiToken}`, 'Content-Type': 'application/json' },
+            headers: {
+                Authorization: `Bearer ${this.apiToken}`,
+                'Content-Type': 'application/json',
+            },
             body: JSON.stringify({}),
         });
         const json = await resp.json();
@@ -25,7 +28,10 @@ let StreamService = class StreamService {
     async patchVideo(uid, body) {
         const resp = await fetch(`https://api.cloudflare.com/client/v4/accounts/${this.accountId}/stream/${uid}`, {
             method: 'PATCH',
-            headers: { 'Authorization': `Bearer ${this.apiToken}`, 'Content-Type': 'application/json' },
+            headers: {
+                Authorization: `Bearer ${this.apiToken}`,
+                'Content-Type': 'application/json',
+            },
             body: JSON.stringify(body),
         });
         const json = await resp.json();
@@ -36,7 +42,7 @@ let StreamService = class StreamService {
     async deleteVideo(uid) {
         const resp = await fetch(`https://api.cloudflare.com/client/v4/accounts/${this.accountId}/stream/${uid}`, {
             method: 'DELETE',
-            headers: { 'Authorization': `Bearer ${this.apiToken}` },
+            headers: { Authorization: `Bearer ${this.apiToken}` },
         });
         const json = await resp.json();
         if (!json.success)

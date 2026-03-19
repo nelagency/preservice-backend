@@ -1,6 +1,5 @@
 import { ParticipationService } from './participation.service';
-import { ApplyDto, ApproveDto, AssignDto, BulkAssignDto, CreateParticipationDto } from './dto/create-participation.dto';
-import { UpdateParticipationDto } from './dto/update-participation.dto';
+import { ApplyDto, ApproveDto, AssignDto, BulkAssignDto } from './dto/create-participation.dto';
 export declare class ParticipationController {
     private readonly svc;
     constructor(svc: ParticipationService);
@@ -37,18 +36,4 @@ export declare class ParticipationController {
     }> & {
         __v: number;
     })[]>;
-    create(createParticipationDto: CreateParticipationDto): string;
-    findOne(id: string): import("mongoose").Query<(import("mongoose").Document<unknown, {}, import("./entities/participation.entity").ParticipationDocument, {}, {}> & import("./entities/participation.entity").Participation & import("mongoose").Document<unknown, any, any, Record<string, any>, {}> & Required<{
-        _id: unknown;
-    }> & {
-        __v: number;
-    }) | null, import("mongoose").Document<unknown, {}, import("./entities/participation.entity").ParticipationDocument, {}, {}> & import("./entities/participation.entity").Participation & import("mongoose").Document<unknown, any, any, Record<string, any>, {}> & Required<{
-        _id: unknown;
-    }> & {
-        __v: number;
-    }, {}, import("./entities/participation.entity").ParticipationDocument, "findOne", {}>;
-    update(id: string, dto: UpdateParticipationDto): string;
-    remove(eventId: string, id: string): Promise<{
-        ok: boolean;
-    }>;
 }

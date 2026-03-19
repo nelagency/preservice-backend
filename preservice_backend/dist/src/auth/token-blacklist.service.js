@@ -31,7 +31,13 @@ let TokenBlacklistService = class TokenBlacklistService {
             return;
         const tokenHash = sha256(token);
         const expiresAt = new Date(expSeconds * 1000);
-        await this.model.updateOne({ tokenHash }, { $set: { tokenHash, userId: userId ? new mongoose_2.Types.ObjectId(userId) : undefined, expiresAt } }, { upsert: true, setDefaultsOnInsert: true });
+        await this.model.updateOne({ tokenHash }, {
+            $set: {
+                tokenHash,
+                userId: userId ? new mongoose_2.Types.ObjectId(userId) : undefined,
+                expiresAt,
+            },
+        }, { upsert: true, setDefaultsOnInsert: true });
     }
     async has(token) {
         const tokenHash = sha256(token);

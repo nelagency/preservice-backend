@@ -19,7 +19,9 @@ let StatsController = class StatsController {
     constructor(svc) {
         this.svc = svc;
     }
-    overview() { return this.svc.overview(); }
+    overview() {
+        return this.svc.overview();
+    }
 };
 exports.StatsController = StatsController;
 __decorate([

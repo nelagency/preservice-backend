@@ -45,7 +45,10 @@ let NotificationsService = NotificationsService_1 = class NotificationsService {
         const ids = (args.userIds || []).filter((x) => mongoose_2.Types.ObjectId.isValid(x));
         if (!ids.length)
             return { created: 0 };
-        const users = await this.userModel.find({ _id: { $in: ids } }).select('_id email').lean();
+        const users = await this.userModel
+            .find({ _id: { $in: ids } })
+            .select('_id email')
+            .lean();
         if (!users.length)
             return { created: 0 };
         const docs = await this.notifModel.insertMany(users.map((u) => ({
@@ -53,14 +56,16 @@ let NotificationsService = NotificationsService_1 = class NotificationsService {
             recipientModel: 'User',
             type: args.type,
             payload: args.payload ?? {},
-            actor: args.actorId && mongoose_2.Types.ObjectId.isValid(args.actorId) ? new mongoose_2.Types.ObjectId(args.actorId) : undefined,
+            actor: args.actorId && mongoose_2.Types.ObjectId.isValid(args.actorId)
+                ? new mongoose_2.Types.ObjectId(args.actorId)
+                : undefined,
             actorModel: args.actorModel ?? 'User',
             title: args.title,
             message: args.message,
             read: false,
         })));
         try {
-            const userIds = users.map(u => u._id.toString());
+            const userIds = users.map((u) => u._id.toString());
             this.gw?.emitToUsers(userIds, {
                 type: args.type,
                 title: args.title,
@@ -86,13 +91,19 @@ let NotificationsService = NotificationsService_1 = class NotificationsService {
             this.log.warn('[pushToAdmins] Aucun admin/superadmin trouvé');
             return { created: 0 };
         }
-        return this.pushToUsers({ ...args, userIds: admins.map((a) => a._id.toString()) });
+        return this.pushToUsers({
+            ...args,
+            userIds: admins.map((a) => a._id.toString()),
+        });
     }
     async pushToServeurs(args) {
         const ids = (args.serveurIds || []).filter((x) => mongoose_2.Types.ObjectId.isValid(x));
         if (!ids.length)
             return { created: 0 };
-        const serveurs = await this.serveurModel.find({ _id: { $in: ids } }).select('_id email nom prenom').lean();
+        const serveurs = await this.serveurModel
+            .find({ _id: { $in: ids } })
+            .select('_id email nom prenom')
+            .lean();
         if (!serveurs.length)
             return { created: 0 };
         const docs = await this.notifModel.insertMany(serveurs.map((s) => ({
@@ -100,14 +111,16 @@ let NotificationsService = NotificationsService_1 = class NotificationsService {
             recipientModel: 'Serveur',
             type: args.type,
             payload: args.payload ?? {},
-            actor: args.actorId && mongoose_2.Types.ObjectId.isValid(args.actorId) ? new mongoose_2.Types.ObjectId(args.actorId) : undefined,
+            actor: args.actorId && mongoose_2.Types.ObjectId.isValid(args.actorId)
+                ? new mongoose_2.Types.ObjectId(args.actorId)
+                : undefined,
             actorModel: args.actorModel ?? 'User',
             title: args.title,
             message: args.message,
             read: false,
         })));
         try {
-            const serveurIds = serveurs.map(s => s._id.toString());
+            const serveurIds = serveurs.map((s) => s._id.toString());
             this.gw?.emitToServeurs(serveurIds, {
                 type: args.type,
                 title: args.title,
@@ -127,13 +140,19 @@ let NotificationsService = NotificationsService_1 = class NotificationsService {
     async sendEmailFor(type, to, payload) {
         const eventId = payload?.eventId || payload?.event;
         const timesheetId = payload?.timesheetId;
-        const event = eventId && mongoose_2.Types.ObjectId.isValid(eventId) ? await this.eventModel.findById(eventId).lean() : null;
-        const ts = timesheetId && mongoose_2.Types.ObjectId.isValid(timesheetId) ? await this.tsModel.findById(timesheetId).lean() : null;
+        const event = eventId && mongoose_2.Types.ObjectId.isValid(eventId)
+            ? await this.eventModel.findById(eventId).lean()
+            : null;
+        const ts = timesheetId && mongoose_2.Types.ObjectId.isValid(timesheetId)
+            ? await this.tsModel.findById(timesheetId).lean()
+            : null;
         switch (type) {
             case 'EVENT_PUBLISHED':
                 if (event)
                     return this.mail.eventPublishedToServeur(to, event);
-                return this.mail.generic(to, 'Nouvel événement publié', { intro: 'Un nouvel évènement vient d’être publié.' });
+                return this.mail.generic(to, 'Nouvel événement publié', {
+                    intro: 'Un nouvel évènement vient d’être publié.',
+                });
             case 'PARTICIPATION_REQUESTED':
                 return this.mail.participationRequestedAdmin(to, event);
             case 'PARTICIPATION_APPROVED':
@@ -149,7 +168,9 @@ let NotificationsService = NotificationsService_1 = class NotificationsService {
             case 'TIMESHEET_PAID':
                 return this.mail.timesheetPaidServeur(to, Number(payload?.amount || 0), !!payload?.finalize);
             default:
-                return this.mail.generic(to, 'Notification', { intro: 'Vous avez une nouvelle notification.' });
+                return this.mail.generic(to, 'Notification', {
+                    intro: 'Vous avez une nouvelle notification.',
+                });
         }
     }
     async listMine(userId, limit = 50, before) {

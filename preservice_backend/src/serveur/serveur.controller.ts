@@ -1,6 +1,21 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, ValidationPipe, UsePipes } from '@nestjs/common';
 import {
-  ApiBearerAuth, ApiTags, ApiOperation, ApiOkResponse, ApiCreatedResponse, ApiBody
+  Controller,
+  Get,
+  Post,
+  Body,
+  Patch,
+  Param,
+  Delete,
+  ValidationPipe,
+  UsePipes,
+} from '@nestjs/common';
+import {
+  ApiBearerAuth,
+  ApiTags,
+  ApiOperation,
+  ApiOkResponse,
+  ApiCreatedResponse,
+  ApiBody,
 } from '@nestjs/swagger';
 import { ServeurService } from './serveur.service';
 import { CreateServeurDto } from './dto/create-serveur.dto';
@@ -13,12 +28,12 @@ import { ChangePasswordDto } from './dto/change-password.dto';
 @ApiBearerAuth()
 @Controller('serveur')
 export class ServeurController {
-  constructor(private readonly serveurService: ServeurService) { }
+  constructor(private readonly serveurService: ServeurService) {}
 
   @Post()
   @ApiOperation({
     summary: "Création d'un serveur",
-    description: "Ajoute un nouveau serveur (personnel).",
+    description: 'Ajoute un nouveau serveur (personnel).',
     operationId: 'serveursCreate',
   })
   @ApiBody({
@@ -34,12 +49,12 @@ export class ServeurController {
           years: 3,
           skills: ['service de table', 'bar'],
           status: 'disponible',
-          isActive: true
-        }
-      }
-    }
+          isActive: true,
+        },
+      },
+    },
   })
-  @ApiCreatedResponse({ description: "Serveur créé." })
+  @ApiCreatedResponse({ description: 'Serveur créé.' })
   @Roles('admin', 'superadmin')
   create(@Body() createServeurDto: CreateServeurDto) {
     return this.serveurService.create(createServeurDto);
@@ -61,7 +76,8 @@ export class ServeurController {
   @Get('meta/serveur-statuses')
   @ApiOperation({
     summary: 'Statuts de serveur',
-    description: "Retourne l'énumération des statuts de serveur sous forme { key, value }.",
+    description:
+      "Retourne l'énumération des statuts de serveur sous forme { key, value }.",
     operationId: 'serveursStatusesMeta',
   })
   @ApiOkResponse({ description: 'Énum des statuts de serveur (key/value).' })
@@ -93,19 +109,24 @@ export class ServeurController {
   }
 
   @Patch(':id/password')
-  @UsePipes(new ValidationPipe({
-    whitelist: true,
-    transform: true,
-    forbidNonWhitelisted: false,
-    validationError: { target: false, value: false },
-  }))
+  @UsePipes(
+    new ValidationPipe({
+      whitelist: true,
+      transform: true,
+      forbidNonWhitelisted: false,
+      validationError: { target: false, value: false },
+    }),
+  )
   @ApiOperation({
     summary: "Changer le password d'un serveur",
     operationId: 'changePassword',
   })
   @ApiOkResponse({ description: 'Mot de passe du serveur mis à jour.' })
   @Roles('admin', 'superadmin', 'serveur')
-  async changePassword(@Param('id') id: string, @Body() body: ChangePasswordDto) {
+  async changePassword(
+    @Param('id') id: string,
+    @Body() body: ChangePasswordDto,
+  ) {
     return this.serveurService.changePassword(id, body);
   }
 
@@ -126,10 +147,10 @@ export class ServeurController {
           mot_passe: 'NewPassw0rd!',
           skills: ['service de table', 'bar', 'caisse'],
           status: 'occupe',
-          isActive: true
-        }
-      }
-    }
+          isActive: true,
+        },
+      },
+    },
   })
   @ApiOkResponse({ description: 'Serveur mis à jour.' })
   @Roles('admin', 'superadmin')

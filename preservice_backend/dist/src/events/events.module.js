@@ -20,11 +20,11 @@ exports.EventsModule = EventsModule = __decorate([
     (0, common_1.Module)({
         imports: [
             mongoose_1.MongooseModule.forFeature([{ name: Event.name, schema: event_entity_1.EventSchema }]),
-            notifications_module_1.NotificationsModule
+            notifications_module_1.NotificationsModule,
         ],
         controllers: [events_controller_1.EventsController],
         providers: [events_service_1.EventsService],
-        exports: [mongoose_1.MongooseModule, events_service_1.EventsService]
+        exports: [mongoose_1.MongooseModule, events_service_1.EventsService],
     })
 ], EventsModule);
 //# sourceMappingURL=events.module.js.map

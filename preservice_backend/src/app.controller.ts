@@ -1,5 +1,17 @@
-import { Controller, Get, HttpCode, HttpStatus, Query, UnauthorizedException } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiOkResponse, ApiExcludeController } from '@nestjs/swagger';
+import {
+  Controller,
+  Get,
+  HttpCode,
+  HttpStatus,
+  Query,
+  UnauthorizedException,
+} from '@nestjs/common';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiOkResponse,
+  ApiExcludeController,
+} from '@nestjs/swagger';
 import { AppService } from './app.service';
 import { Public } from './common/decorators/public.decorator';
 import { runCronMaintenance } from './scripts/cron-maintenance';
@@ -8,7 +20,7 @@ import { runCronMaintenance } from './scripts/cron-maintenance';
 @ApiTags('System')
 @Controller()
 export class AppController {
-  constructor(private readonly appService: AppService) { }
+  constructor(private readonly appService: AppService) {}
 
   @Public()
   @Get('test')
@@ -28,7 +40,8 @@ export class AppController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary: 'Vérification de santé',
-    description: 'Retourne { ok: true, ts } pour indiquer que le service est en ligne.',
+    description:
+      'Retourne { ok: true, ts } pour indiquer que le service est en ligne.',
     operationId: 'systemHealth',
   })
   @ApiOkResponse({ description: 'Service en ligne.' })

@@ -18,11 +18,6 @@ export declare class EventsController {
     }> & {
         __v: number;
     }, {}, import("./entities/event.entity").EventDocument, "find", {}>;
-    findOne(id: string): Promise<import("mongoose").Document<unknown, {}, import("./entities/event.entity").EventDocument, {}, {}> & import("./entities/event.entity").Event & import("mongoose").Document<unknown, any, any, Record<string, any>, {}> & Required<{
-        _id: unknown;
-    }> & {
-        __v: number;
-    }>;
     update(id: string, updateEventDto: UpdateEventDto): Promise<import("mongoose").Document<unknown, {}, import("./entities/event.entity").EventDocument, {}, {}> & import("./entities/event.entity").Event & import("mongoose").Document<unknown, any, any, Record<string, any>, {}> & Required<{
         _id: unknown;
     }> & {
@@ -33,7 +28,7 @@ export declare class EventsController {
     }>;
     kpi(): Promise<{
         label: string;
-        value: any;
+        value: number;
         difference: number;
         inProgress: boolean;
     }[]>;
@@ -44,7 +39,7 @@ export declare class EventsController {
     })[]>;
     typesPercent(): Promise<{
         label: string;
-        count: any;
+        count: number;
         percent: number;
     }[]>;
     typesKV(): {
@@ -55,4 +50,9 @@ export declare class EventsController {
         key: string;
         value: import("./entities/event.entity").EventStatusEnum;
     }[];
+    findOne(id: string): Promise<import("mongoose").Document<unknown, {}, import("./entities/event.entity").EventDocument, {}, {}> & import("./entities/event.entity").Event & import("mongoose").Document<unknown, any, any, Record<string, any>, {}> & Required<{
+        _id: unknown;
+    }> & {
+        __v: number;
+    }>;
 }

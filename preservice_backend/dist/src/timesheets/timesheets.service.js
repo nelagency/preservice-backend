@@ -69,11 +69,15 @@ let TimesheetsService = class TimesheetsService {
             throw new common_1.BadRequestException('worked minutes must be > 0');
         const doc = await this.tsModel.findOneAndUpdate({ event: event._id, serveur: new mongoose_2.Types.ObjectId(serveurId) }, {
             $set: {
-                startAt: start, endAt: end,
+                startAt: start,
+                endAt: end,
                 breakMinutes: dto.breakMinutes,
-                workedMinutes, note: dto.note ?? null,
+                workedMinutes,
+                note: dto.note ?? null,
                 status: 'submitted',
-                validatedBy: null, validatedAt: null, validationComment: null,
+                validatedBy: null,
+                validatedAt: null,
+                validationComment: null,
             },
         }, { new: true, upsert: true, setDefaultsOnInsert: true });
         await this.notifications.pushToAdmins({
@@ -86,7 +90,10 @@ let TimesheetsService = class TimesheetsService {
         return doc;
     }
     async getMineForEvent(eventId, serveurId) {
-        const doc = await this.tsModel.findOne({ event: eventId, serveur: serveurId });
+        const doc = await this.tsModel.findOne({
+            event: eventId,
+            serveur: serveurId,
+        });
         if (!doc)
             throw new common_1.NotFoundException('No timesheet');
         return doc;
@@ -132,11 +139,17 @@ let TimesheetsService = class TimesheetsService {
         return ts;
     }
     async listForEvent(eventId) {
-        const list = this.tsModel.find({ event: eventId }).populate('serveur').sort({ createdAt: -1 }).lean();
+        const list = this.tsModel
+            .find({ event: eventId })
+            .populate('serveur')
+            .sort({ createdAt: -1 })
+            .lean();
         return list;
     }
     async listForServeur(serveurId) {
-        const sid = mongoose_2.Types.ObjectId.isValid(serveurId) ? new mongoose_2.Types.ObjectId(serveurId) : serveurId;
+        const sid = mongoose_2.Types.ObjectId.isValid(serveurId)
+            ? new mongoose_2.Types.ObjectId(serveurId)
+            : serveurId;
         return this.tsModel
             .find({ serveur: sid })
             .populate('event')
@@ -145,14 +158,29 @@ let TimesheetsService = class TimesheetsService {
             .exec();
     }
     async listForServeurSmart(userOrServeurId) {
-        const id = mongoose_2.Types.ObjectId.isValid(userOrServeurId) ? new mongoose_2.Types.ObjectId(userOrServeurId) : userOrServeurId;
-        let list = await this.tsModel.find({ serveur: id }).populate('event').sort({ createdAt: -1 }).lean().exec();
+        const id = mongoose_2.Types.ObjectId.isValid(userOrServeurId)
+            ? new mongoose_2.Types.ObjectId(userOrServeurId)
+            : userOrServeurId;
+        const list = await this.tsModel
+            .find({ serveur: id })
+            .populate('event')
+            .sort({ createdAt: -1 })
+            .lean()
+            .exec();
         if (list.length)
             return list;
-        const srv = await this.serveurModel.findOne({ user: id }).lean().exec();
+        const srv = await this.serveurModel
+            .findOne({ user: id })
+            .lean()
+            .exec();
         if (!srv?._id)
             return [];
-        return this.tsModel.find({ serveur: srv._id }).populate('event').sort({ createdAt: -1 }).lean().exec();
+        return this.tsModel
+            .find({ serveur: srv._id })
+            .populate('event')
+            .sort({ createdAt: -1 })
+            .lean()
+            .exec();
     }
     async pay(timesheetId, adminId, dto) {
         const ts = await this.tsModel.findById(timesheetId);
@@ -187,7 +215,11 @@ let TimesheetsService = class TimesheetsService {
             await this.notifications.pushToServeurs({
                 type: 'TIMESHEET_PAID',
                 serveurIds: [serveurIdStr],
-                payload: { timesheetId: ts.id.toString(), amount: amt, finalize: !!dto.finalize },
+                payload: {
+                    timesheetId: ts.id.toString(),
+                    amount: amt,
+                    finalize: !!dto.finalize,
+                },
                 actorId: adminId,
                 actorModel: 'User',
                 title: dto.finalize ? 'Paiement finalisé' : 'Paiement enregistré',

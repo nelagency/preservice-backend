@@ -77,8 +77,12 @@ let ParticipationService = class ParticipationService {
         }
     }
     async setCandidatureStatus(eventId, participationId, status) {
-        const before = await this.model.findById(participationId).select('candidatureStatus').lean();
-        const doc = await this.model.findByIdAndUpdate(participationId, {
+        const before = await this.model
+            .findById(participationId)
+            .select('candidatureStatus')
+            .lean();
+        const doc = await this.model
+            .findByIdAndUpdate(participationId, {
             candidatureStatus: status,
             approvedAt: status === participation_entity_1.CandidatureStatus.approved ? new Date() : undefined,
         }, { new: true })
@@ -86,7 +90,8 @@ let ParticipationService = class ParticipationService {
             .lean();
         if (!doc)
             throw new common_1.NotFoundException('Participation not found');
-        const justApproved = status === participation_entity_1.CandidatureStatus.approved && before?.candidatureStatus !== participation_entity_1.CandidatureStatus.approved;
+        const justApproved = status === participation_entity_1.CandidatureStatus.approved &&
+            before?.candidatureStatus !== participation_entity_1.CandidatureStatus.approved;
         if (justApproved) {
             const event = await this.eventModel.findById(eventId).lean();
             if (event && doc.serveur?.email) {
@@ -96,14 +101,21 @@ let ParticipationService = class ParticipationService {
         return doc;
     }
     async setCandidatureStatusEvent(eventId, participationId, status, adminId) {
-        const before = await this.model.findById(participationId).select('candidatureStatus').lean();
-        const doc = await this.model.findByIdAndUpdate(participationId, {
+        const before = await this.model
+            .findById(participationId)
+            .select('candidatureStatus')
+            .lean();
+        const doc = await this.model
+            .findByIdAndUpdate(participationId, {
             candidatureStatus: status,
             approvedAt: status === participation_entity_1.CandidatureStatus.approved ? new Date() : undefined,
-        }, { new: true }).populate('serveur', 'email nom prenom').lean();
+        }, { new: true })
+            .populate('serveur', 'email nom prenom')
+            .lean();
         if (!doc)
             throw new common_1.NotFoundException('Participation not found');
-        const justApproved = status === participation_entity_1.CandidatureStatus.approved && before?.candidatureStatus !== participation_entity_1.CandidatureStatus.approved;
+        const justApproved = status === participation_entity_1.CandidatureStatus.approved &&
+            before?.candidatureStatus !== participation_entity_1.CandidatureStatus.approved;
         const serveurIdStr = doc?.serveur?._id?.toString?.() ??
             doc?.serveur?.toString?.();
         if (justApproved && serveurIdStr) {
@@ -143,8 +155,12 @@ let ParticipationService = class ParticipationService {
         const count = await this.model.countDocuments({
             event: eventId,
             role,
-            assignmentStatus: { $in: [participation_entity_1.AssignmentStatus.provisional, participation_entity_1.AssignmentStatus.confirmed] },
-            ...(excludeParticipationId ? { _id: { $ne: excludeParticipationId } } : {}),
+            assignmentStatus: {
+                $in: [participation_entity_1.AssignmentStatus.provisional, participation_entity_1.AssignmentStatus.confirmed],
+            },
+            ...(excludeParticipationId
+                ? { _id: { $ne: excludeParticipationId } }
+                : {}),
         });
         if (count >= req.capacity) {
             throw new common_1.BadRequestException(`Capacité atteinte pour le poste ${role}`);
@@ -188,7 +204,10 @@ let ParticipationService = class ParticipationService {
     }
     async kpis(eventId) {
         const [confirmed, pending, assigned, totalReq] = await Promise.all([
-            this.model.countDocuments({ event: eventId, assignmentStatus: participation_entity_1.AssignmentStatus.confirmed }),
+            this.model.countDocuments({
+                event: eventId,
+                assignmentStatus: participation_entity_1.AssignmentStatus.confirmed,
+            }),
             this.model.countDocuments({
                 event: eventId,
                 candidatureStatus: participation_entity_1.CandidatureStatus.pending,
@@ -196,7 +215,9 @@ let ParticipationService = class ParticipationService {
             this.model.countDocuments({
                 event: eventId,
                 role: { $ne: null },
-                assignmentStatus: { $in: [participation_entity_1.AssignmentStatus.provisional, participation_entity_1.AssignmentStatus.confirmed] },
+                assignmentStatus: {
+                    $in: [participation_entity_1.AssignmentStatus.provisional, participation_entity_1.AssignmentStatus.confirmed],
+                },
             }),
             this.totalSlots(eventId),
         ]);
@@ -229,26 +250,6 @@ let ParticipationService = class ParticipationService {
             .find({ serveur: new mongoose_2.Types.ObjectId(serveurId) })
             .populate('serveur', 'event')
             .lean();
-    }
-    create(createParticipationDto) {
-        return 'This action adds a new participation';
-    }
-    findAll() {
-        return this.model.find().populate('serveur', 'event');
-    }
-    findOne(id) {
-        return this.model.findById(id).populate('serveur', 'event');
-    }
-    update(id, updateParticipationDto) {
-        return `This action updates a #${id} participation`;
-    }
-    async remove(id) {
-        if (!mongoose_2.Types.ObjectId.isValid(id))
-            throw new common_1.BadRequestException('id invalide');
-        const doc = await this.model.findByIdAndDelete(id);
-        if (!doc)
-            throw new common_1.NotFoundException('Participation not found');
-        return { ok: true };
     }
 };
 exports.ParticipationService = ParticipationService;

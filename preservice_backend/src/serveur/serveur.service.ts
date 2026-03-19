@@ -1,12 +1,23 @@
-import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  ConflictException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { CreateServeurDto } from './dto/create-serveur.dto';
 import { UpdateServeurDto } from './dto/update-serveur.dto';
-import { Serveur, ServeurDocument, ServeurStatus } from './entities/serveur.entity';
+import {
+  Serveur,
+  ServeurDocument,
+  ServeurStatus,
+} from './entities/serveur.entity';
 import * as bcrypt from 'bcryptjs';
 import { Event, EventDocument } from 'src/events/entities/event.entity';
-import { Participation, ParticipationDocument } from 'src/participation/entities/participation.entity';
+import {
+  Participation,
+  ParticipationDocument,
+} from 'src/participation/entities/participation.entity';
 
 const SALT_ROUNDS = 10;
 const sanitizeEmail = (e?: string) => (e ?? '').trim().toLowerCase();
@@ -16,8 +27,9 @@ export class ServeurService {
   constructor(
     @InjectModel(Serveur.name) private model: Model<ServeurDocument>,
     @InjectModel(Event.name) private readonly eventModel: Model<EventDocument>,
-    @InjectModel(Participation.name) private readonly participationModel: Model<ParticipationDocument>,
-  ) { }
+    @InjectModel(Participation.name)
+    private readonly participationModel: Model<ParticipationDocument>,
+  ) {}
 
   /** CRUD par défaut **/
   async create(dto: CreateServeurDto) {
@@ -29,7 +41,7 @@ export class ServeurService {
     const created = await this.model.create({
       ...dto,
       email,
-      mot_passe: hashed
+      mot_passe: hashed,
     });
     const plain = created.toObject();
     delete (plain as any).mot_passe;
@@ -37,7 +49,10 @@ export class ServeurService {
   }
 
   findAll() {
-    return this.model.find({}, { mot_passe: 0 }).sort({ nom: 1, prenom: 1 }).lean();;
+    return this.model
+      .find({}, { mot_passe: 0 })
+      .sort({ nom: 1, prenom: 1 })
+      .lean();
   }
 
   async findOne(id: string) {
@@ -50,13 +65,22 @@ export class ServeurService {
     const update = { ...dto };
     if (dto.email) {
       update.email = sanitizeEmail(dto.email);
-      const conflict = await this.model.exists({ _id: { $ne: id }, email: update.email });
+      const conflict = await this.model.exists({
+        _id: { $ne: id },
+        email: update.email,
+      });
       if (conflict) throw new ConflictException('Email déjà utilisé');
     }
     if (dto.mot_passe) {
       update.mot_passe = await bcrypt.hash(dto.mot_passe, SALT_ROUNDS);
     }
-    const updated1 = await this.model.findByIdAndUpdate(id, { $set: update }, { new: true, fields: { mot_passe: 0 } }).lean();
+    const updated1 = await this.model
+      .findByIdAndUpdate(
+        id,
+        { $set: update },
+        { new: true, fields: { mot_passe: 0 } },
+      )
+      .lean();
     if (!updated1) throw new NotFoundException('Serveur not found');
     return updated1;
   }
@@ -69,17 +93,26 @@ export class ServeurService {
 
   /** Statuts de serveur (key/value) **/
   serveurStatusesKV() {
-    return Object.entries(ServeurStatus).map(([key, value]) => ({ key, value }));
+    return Object.entries(ServeurStatus).map(([key, value]) => ({
+      key,
+      value,
+    }));
   }
 
   async listAssignedEvents(serverId: string) {
     const sid = new Types.ObjectId(serverId);
-    const parts = await this.participationModel.find({ serveur: sid }).populate('event').lean();
+    const parts = await this.participationModel
+      .find({ serveur: sid })
+      .populate('event')
+      .lean();
 
     // Map → DTO attendu côté front
-    return parts.map(p => {
+    return parts.map((p) => {
       const ev = p.event as any;
-      const iso = (ev?.startdate instanceof Date ? ev.startdate.toISOString().slice(0, 10) : (ev?.startdate || ''));
+      const iso =
+        ev?.startdate instanceof Date
+          ? ev.startdate.toISOString().slice(0, 10)
+          : ev?.startdate || '';
       return {
         _id: ev?._id?.toString() || p._id.toString(),
         title: ev?.title || 'Événement',
@@ -90,7 +123,13 @@ export class ServeurService {
     });
   }
 
-  async changePassword(id: string, { currentPassword, newPassword }: { currentPassword: string; newPassword: string }) {
+  async changePassword(
+    id: string,
+    {
+      currentPassword,
+      newPassword,
+    }: { currentPassword: string; newPassword: string },
+  ) {
     const srv = await this.model.findById(id);
     if (!srv) throw new NotFoundException('Serveur introuvable');
 

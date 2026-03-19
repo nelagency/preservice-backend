@@ -47,7 +47,7 @@ export declare class ServeurService {
         role: any;
         active: boolean;
     }[]>;
-    changePassword(id: string, { currentPassword, newPassword }: {
+    changePassword(id: string, { currentPassword, newPassword, }: {
         currentPassword: string;
         newPassword: string;
     }): Promise<{

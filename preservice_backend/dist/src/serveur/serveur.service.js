@@ -73,15 +73,17 @@ let ServeurService = class ServeurService {
         const created = await this.model.create({
             ...dto,
             email,
-            mot_passe: hashed
+            mot_passe: hashed,
         });
         const plain = created.toObject();
         delete plain.mot_passe;
         return plain;
     }
     findAll() {
-        return this.model.find({}, { mot_passe: 0 }).sort({ nom: 1, prenom: 1 }).lean();
-        ;
+        return this.model
+            .find({}, { mot_passe: 0 })
+            .sort({ nom: 1, prenom: 1 })
+            .lean();
     }
     async findOne(id) {
         const doc = await this.model.findById(id, { mot_passe: 0 }).lean();
@@ -93,14 +95,19 @@ let ServeurService = class ServeurService {
         const update = { ...dto };
         if (dto.email) {
             update.email = sanitizeEmail(dto.email);
-            const conflict = await this.model.exists({ _id: { $ne: id }, email: update.email });
+            const conflict = await this.model.exists({
+                _id: { $ne: id },
+                email: update.email,
+            });
             if (conflict)
                 throw new common_1.ConflictException('Email déjà utilisé');
         }
         if (dto.mot_passe) {
             update.mot_passe = await bcrypt.hash(dto.mot_passe, SALT_ROUNDS);
         }
-        const updated1 = await this.model.findByIdAndUpdate(id, { $set: update }, { new: true, fields: { mot_passe: 0 } }).lean();
+        const updated1 = await this.model
+            .findByIdAndUpdate(id, { $set: update }, { new: true, fields: { mot_passe: 0 } })
+            .lean();
         if (!updated1)
             throw new common_1.NotFoundException('Serveur not found');
         return updated1;
@@ -112,14 +119,22 @@ let ServeurService = class ServeurService {
         return { success: true };
     }
     serveurStatusesKV() {
-        return Object.entries(serveur_entity_1.ServeurStatus).map(([key, value]) => ({ key, value }));
+        return Object.entries(serveur_entity_1.ServeurStatus).map(([key, value]) => ({
+            key,
+            value,
+        }));
     }
     async listAssignedEvents(serverId) {
         const sid = new mongoose_2.Types.ObjectId(serverId);
-        const parts = await this.participationModel.find({ serveur: sid }).populate('event').lean();
-        return parts.map(p => {
+        const parts = await this.participationModel
+            .find({ serveur: sid })
+            .populate('event')
+            .lean();
+        return parts.map((p) => {
             const ev = p.event;
-            const iso = (ev?.startdate instanceof Date ? ev.startdate.toISOString().slice(0, 10) : (ev?.startdate || ''));
+            const iso = ev?.startdate instanceof Date
+                ? ev.startdate.toISOString().slice(0, 10)
+                : ev?.startdate || '';
             return {
                 _id: ev?._id?.toString() || p._id.toString(),
                 title: ev?.title || 'Événement',
@@ -129,7 +144,7 @@ let ServeurService = class ServeurService {
             };
         });
     }
-    async changePassword(id, { currentPassword, newPassword }) {
+    async changePassword(id, { currentPassword, newPassword, }) {
         const srv = await this.model.findById(id);
         if (!srv)
             throw new common_1.NotFoundException('Serveur introuvable');

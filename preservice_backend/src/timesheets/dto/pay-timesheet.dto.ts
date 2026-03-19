@@ -1,13 +1,22 @@
-import { IsBoolean, IsNumber, IsOptional, IsString, Min } from 'class-validator';
+import {
+  IsBoolean,
+  IsNumber,
+  IsOptional,
+  IsString,
+  Min,
+} from 'class-validator';
 
 export class PayTimesheetDto {
-    @IsNumber() @Min(0.01)
-    amount!: number;
+  @IsNumber()
+  @Min(0.01)
+  amount!: number;
 
-    @IsOptional() @IsString()
-    note?: string;
+  @IsOptional()
+  @IsString()
+  note?: string;
 
-    /** si true => marque le timesheet comme totalement payé */
-    @IsOptional() @IsBoolean()
-    finalize?: boolean;
+  /** si true => marque le timesheet comme totalement payé */
+  @IsOptional()
+  @IsBoolean()
+  finalize?: boolean;
 }

@@ -24,11 +24,21 @@ let Notification = class Notification {
 };
 exports.Notification = Notification;
 __decorate([
-    (0, mongoose_1.Prop)({ type: mongoose_2.Types.ObjectId, refPath: 'recipientModel', required: true, index: true }),
+    (0, mongoose_1.Prop)({
+        type: mongoose_2.Types.ObjectId,
+        refPath: 'recipientModel',
+        required: true,
+        index: true,
+    }),
     __metadata("design:type", mongoose_2.Types.ObjectId)
 ], Notification.prototype, "recipient", void 0);
 __decorate([
-    (0, mongoose_1.Prop)({ type: String, enum: ['User', 'Serveur'], required: true, index: true }),
+    (0, mongoose_1.Prop)({
+        type: String,
+        enum: ['User', 'Serveur'],
+        required: true,
+        index: true,
+    }),
     __metadata("design:type", String)
 ], Notification.prototype, "recipientModel", void 0);
 __decorate([

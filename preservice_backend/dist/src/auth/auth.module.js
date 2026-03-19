@@ -21,6 +21,10 @@ const refresh_tokens_service_1 = require("./refresh-tokens.service");
 const serveur_auth_service_1 = require("./serveur-auth.service");
 const serveur_auth_controller_1 = require("./serveur-auth.controller");
 const serveur_module_1 = require("../serveur/serveur.module");
+const mail_module_1 = require("../mail/mail.module");
+const admin_audit_log_schema_1 = require("./schemas/admin-audit-log.schema");
+const admin_audit_log_service_1 = require("./admin-audit-log.service");
+const two_factor_service_1 = require("./two-factor.service");
 let AuthModule = class AuthModule {
 };
 exports.AuthModule = AuthModule;
@@ -32,10 +36,20 @@ exports.AuthModule = AuthModule = __decorate([
                 { name: user_entity_1.User.name, schema: user_entity_1.UserSchema },
                 { name: blacklisted_token_schema_1.BlacklistedToken.name, schema: blacklisted_token_schema_1.BlacklistedTokenSchema },
                 { name: refresh_token_schema_1.RefreshToken.name, schema: refresh_token_schema_1.RefreshTokenSchema },
+                { name: admin_audit_log_schema_1.AdminAuditLog.name, schema: admin_audit_log_schema_1.AdminAuditLogSchema },
             ]),
-            serveur_module_1.ServeurModule
+            serveur_module_1.ServeurModule,
+            mail_module_1.MailModule,
         ],
-        providers: [auth_service_1.AuthService, jwt_strategy_1.JwtStrategy, token_blacklist_service_1.TokenBlacklistService, refresh_tokens_service_1.RefreshTokensService, serveur_auth_service_1.ServeurAuthService],
+        providers: [
+            auth_service_1.AuthService,
+            jwt_strategy_1.JwtStrategy,
+            token_blacklist_service_1.TokenBlacklistService,
+            refresh_tokens_service_1.RefreshTokensService,
+            serveur_auth_service_1.ServeurAuthService,
+            admin_audit_log_service_1.AdminAuditLogService,
+            two_factor_service_1.TwoFactorService,
+        ],
         controllers: [auth_controller_1.AuthController, serveur_auth_controller_1.ServeurAuthController],
     })
 ], AuthModule);

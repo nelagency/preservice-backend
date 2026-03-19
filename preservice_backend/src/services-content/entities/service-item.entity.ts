@@ -2,10 +2,11 @@ import { ApiProperty } from '@nestjs/swagger';
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document } from 'mongoose';
 
-export type ServiceItemDocument = ServiceItem & Document & {
-  createdAt: Date;
-  updatedAt: Date;
-};
+export type ServiceItemDocument = ServiceItem &
+  Document & {
+    createdAt: Date;
+    updatedAt: Date;
+  };
 
 @Schema({ timestamps: true })
 export class ServiceItem {
@@ -13,7 +14,9 @@ export class ServiceItem {
   @Prop({ required: true, trim: true })
   title: string;
 
-  @ApiProperty({ example: 'Organisation clé en main pour mariages, anniversaires, etc.' })
+  @ApiProperty({
+    example: 'Organisation clé en main pour mariages, anniversaires, etc.',
+  })
   @Prop({ required: true, trim: true })
   description: string;
 
@@ -31,4 +34,3 @@ export class ServiceItem {
 }
 
 export const ServiceItemSchema = SchemaFactory.createForClass(ServiceItem);
-

@@ -57,7 +57,10 @@ let AvisService = class AvisService {
             payload.client = new mongoose_2.Types.ObjectId(dto.client);
         if (dto.event)
             payload.event = new mongoose_2.Types.ObjectId(dto.event);
-        const updated = await this.model.findByIdAndUpdate(id, payload, { new: true }).lean().populate('client', 'event');
+        const updated = await this.model
+            .findByIdAndUpdate(id, payload, { new: true })
+            .lean()
+            .populate('client', 'event');
         if (!updated)
             throw new common_1.NotFoundException('Avis not found');
         return updated;

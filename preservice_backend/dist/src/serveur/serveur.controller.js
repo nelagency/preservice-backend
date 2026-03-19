@@ -56,7 +56,7 @@ __decorate([
     (0, common_1.Post)(),
     (0, swagger_1.ApiOperation)({
         summary: "Création d'un serveur",
-        description: "Ajoute un nouveau serveur (personnel).",
+        description: 'Ajoute un nouveau serveur (personnel).',
         operationId: 'serveursCreate',
     }),
     (0, swagger_1.ApiBody)({
@@ -72,12 +72,12 @@ __decorate([
                     years: 3,
                     skills: ['service de table', 'bar'],
                     status: 'disponible',
-                    isActive: true
-                }
-            }
-        }
+                    isActive: true,
+                },
+            },
+        },
     }),
-    (0, swagger_1.ApiCreatedResponse)({ description: "Serveur créé." }),
+    (0, swagger_1.ApiCreatedResponse)({ description: 'Serveur créé.' }),
     (0, roles_decorator_1.Roles)('admin', 'superadmin'),
     __param(0, (0, common_1.Body)()),
     __metadata("design:type", Function),
@@ -106,7 +106,6 @@ __decorate([
         operationId: 'serveursStatusesMeta',
     }),
     (0, swagger_1.ApiOkResponse)({ description: 'Énum des statuts de serveur (key/value).' }),
-    (0, roles_decorator_1.Roles)('admin', 'superadmin'),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", []),
     __metadata("design:returntype", void 0)
@@ -176,10 +175,10 @@ __decorate([
                     mot_passe: 'NewPassw0rd!',
                     skills: ['service de table', 'bar', 'caisse'],
                     status: 'occupe',
-                    isActive: true
-                }
-            }
-        }
+                    isActive: true,
+                },
+            },
+        },
     }),
     (0, swagger_1.ApiOkResponse)({ description: 'Serveur mis à jour.' }),
     (0, roles_decorator_1.Roles)('admin', 'superadmin'),

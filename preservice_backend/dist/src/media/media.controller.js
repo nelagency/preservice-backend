@@ -25,7 +25,11 @@ let MediaController = class MediaController {
         this.svc = svc;
     }
     presignR2(dto) {
-        return this.svc.requestR2Presign({ filename: dto.filename, contentType: dto.contentType, eventId: dto.eventId });
+        return this.svc.requestR2Presign({
+            filename: dto.filename,
+            contentType: dto.contentType,
+            eventId: dto.eventId,
+        });
     }
     finalizeR2(dto) {
         return this.svc.finalizeR2Upload(dto);
@@ -55,7 +59,9 @@ let MediaController = class MediaController {
 exports.MediaController = MediaController;
 __decorate([
     (0, common_1.Post)('r2/presign'),
-    (0, swagger_1.ApiOperation)({ summary: 'Demander une URL présignée (PUT) pour uploader une image vers R2' }),
+    (0, swagger_1.ApiOperation)({
+        summary: 'Demander une URL présignée (PUT) pour uploader une image vers R2',
+    }),
     (0, swagger_1.ApiBody)({ type: media_dto_1.RequestR2PresignDto }),
     (0, roles_decorator_1.Roles)('admin', 'superadmin', 'serveur', 'coordinateur'),
     __param(0, (0, common_1.Body)()),
@@ -75,7 +81,9 @@ __decorate([
 ], MediaController.prototype, "finalizeR2", null);
 __decorate([
     (0, common_1.Post)('stream/direct-upload'),
-    (0, swagger_1.ApiOperation)({ summary: 'Obtenir une URL d’upload direct Cloudflare Stream' }),
+    (0, swagger_1.ApiOperation)({
+        summary: 'Obtenir une URL d’upload direct Cloudflare Stream',
+    }),
     (0, swagger_1.ApiBody)({ type: media_dto_1.CreateStreamDirectUploadDto }),
     (0, roles_decorator_1.Roles)('admin', 'superadmin', 'serveur', 'coordinateur'),
     __metadata("design:type", Function),
@@ -135,7 +143,9 @@ __decorate([
 ], MediaController.prototype, "listPairs", null);
 __decorate([
     (0, common_1.Delete)(':id'),
-    (0, swagger_1.ApiOperation)({ summary: 'Supprimer un média (R2 ou Stream) et nettoyer les références' }),
+    (0, swagger_1.ApiOperation)({
+        summary: 'Supprimer un média (R2 ou Stream) et nettoyer les références',
+    }),
     (0, roles_decorator_1.Roles)('admin', 'superadmin'),
     __param(0, (0, common_1.Param)('id')),
     __metadata("design:type", Function),

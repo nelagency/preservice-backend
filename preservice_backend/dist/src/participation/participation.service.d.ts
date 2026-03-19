@@ -1,5 +1,4 @@
-import { AssignDto, BulkAssignDto, CreateParticipationDto } from './dto/create-participation.dto';
-import { UpdateParticipationDto } from './dto/update-participation.dto';
+import { AssignDto, BulkAssignDto } from './dto/create-participation.dto';
 import { EventDocument } from 'src/events/entities/event.entity';
 import { Model } from 'mongoose';
 import { CandidatureStatus, Participation, ParticipationDocument } from './entities/participation.entity';
@@ -57,27 +56,4 @@ export declare class ParticipationService {
     }> & {
         __v: number;
     })[]>;
-    create(createParticipationDto: CreateParticipationDto): string;
-    findAll(): import("mongoose").Query<(import("mongoose").Document<unknown, {}, ParticipationDocument, {}, {}> & Participation & import("mongoose").Document<unknown, any, any, Record<string, any>, {}> & Required<{
-        _id: unknown;
-    }> & {
-        __v: number;
-    })[], import("mongoose").Document<unknown, {}, ParticipationDocument, {}, {}> & Participation & import("mongoose").Document<unknown, any, any, Record<string, any>, {}> & Required<{
-        _id: unknown;
-    }> & {
-        __v: number;
-    }, {}, ParticipationDocument, "find", {}>;
-    findOne(id: number): import("mongoose").Query<(import("mongoose").Document<unknown, {}, ParticipationDocument, {}, {}> & Participation & import("mongoose").Document<unknown, any, any, Record<string, any>, {}> & Required<{
-        _id: unknown;
-    }> & {
-        __v: number;
-    }) | null, import("mongoose").Document<unknown, {}, ParticipationDocument, {}, {}> & Participation & import("mongoose").Document<unknown, any, any, Record<string, any>, {}> & Required<{
-        _id: unknown;
-    }> & {
-        __v: number;
-    }, {}, ParticipationDocument, "findOne", {}>;
-    update(id: number, updateParticipationDto: UpdateParticipationDto): string;
-    remove(id: string): Promise<{
-        ok: boolean;
-    }>;
 }

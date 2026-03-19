@@ -3,6 +3,14 @@ import { Model } from 'mongoose';
 import { RefreshTokensService } from './refresh-tokens.service';
 import { ConfigService } from '@nestjs/config';
 import { ServeurDocument } from 'src/serveur/entities/serveur.entity';
+type ServeurTokenPayload = {
+    sub: string;
+    email: string;
+    role: 'serveur';
+    nom: string;
+    isActive?: boolean;
+    realm: 'serveur';
+};
 export declare class ServeurAuthService {
     private config;
     private jwt;
@@ -18,21 +26,8 @@ export declare class ServeurAuthService {
         refresh_token: string;
         refresh_expires_at: Date;
         access_token: string;
-        user: {
-            sub: any;
-            email: any;
-            role: string;
-            nom: string;
-            isActive: any;
-            realm: string;
-        };
+        user: ServeurTokenPayload;
     }>;
-    me(serveurId: string): Promise<{
-        sub: any;
-        email: any;
-        role: string;
-        nom: string;
-        isActive: any;
-        realm: string;
-    }>;
+    me(serveurId: string): Promise<ServeurTokenPayload>;
 }
+export {};

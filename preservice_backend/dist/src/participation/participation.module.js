@@ -20,16 +20,17 @@ let ParticipationModule = class ParticipationModule {
 exports.ParticipationModule = ParticipationModule;
 exports.ParticipationModule = ParticipationModule = __decorate([
     (0, common_1.Module)({
-        imports: [mongoose_1.MongooseModule.forFeature([
+        imports: [
+            mongoose_1.MongooseModule.forFeature([
                 { name: participation_entity_1.Participation.name, schema: participation_entity_1.ParticipationSchema },
                 { name: event_entity_1.Event.name, schema: event_entity_1.EventSchema },
             ]),
             mail_module_1.MailModule,
-            notifications_module_1.NotificationsModule
+            notifications_module_1.NotificationsModule,
         ],
         controllers: [participation_controller_1.ParticipationController],
         providers: [participation_service_1.ParticipationService],
-        exports: [mongoose_1.MongooseModule, participation_service_1.ParticipationService]
+        exports: [mongoose_1.MongooseModule, participation_service_1.ParticipationService],
     })
 ], ParticipationModule);
 //# sourceMappingURL=participation.module.js.map

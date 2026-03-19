@@ -29,7 +29,10 @@ import { ContactModule } from './contact/contact.module';
 import { ServicesContentModule } from './services-content/services-content.module';
 import { AboutContentModule } from './about-content/about-content.module';
 
-function coerceExpires(raw: string | number | undefined, fallback: number | StringValue): number | StringValue {
+function coerceExpires(
+  raw: string | number | undefined,
+  fallback: number | StringValue,
+): number | StringValue {
   if (raw === undefined || raw === null || raw === '') return fallback;
   if (typeof raw === 'number') return raw;
   // si "3600" -> number, sinon on garde la string ("1d", "12h", etc.)
@@ -40,14 +43,18 @@ const mongoLog = new Logger('MongoDB');
 
 @Module({
   imports: [
-    ConfigModule.forRoot({ isGlobal: true, envFilePath: '.env', load: [configuration] }),
+    ConfigModule.forRoot({
+      isGlobal: true,
+      envFilePath: '.env',
+      load: [configuration],
+    }),
     JwtModule.registerAsync({
       global: true,
       inject: [ConfigService],
       useFactory: (cfg: ConfigService) => {
         const secret = cfg.get<string>('auth.accessToken') ?? 'changeme';
         const rawExp = cfg.get<string | number>('auth.accessIn', '60m');
-        const expiresIn = coerceExpires(rawExp, '60m'); 
+        const expiresIn = coerceExpires(rawExp, '60m');
         return {
           secret,
           signOptions: { expiresIn },
@@ -58,8 +65,11 @@ const mongoLog = new Logger('MongoDB');
       inject: [ConfigService],
       useFactory: () => {
         const failFastOnDisconnect =
-          String(process.env.MONGO_FAIL_FAST_ON_DISCONNECT ?? 'true').toLowerCase() === 'true';
-        const inProduction = String(process.env.NODE_ENV).toLowerCase() === 'production';
+          String(
+            process.env.MONGO_FAIL_FAST_ON_DISCONNECT ?? 'true',
+          ).toLowerCase() === 'true';
+        const inProduction =
+          String(process.env.NODE_ENV).toLowerCase() === 'production';
         return {
           uri: process.env.MONGO_URI,
           serverSelectionTimeoutMS: 10000,
@@ -77,13 +87,16 @@ const mongoLog = new Logger('MongoDB');
               mongoLog.log('Connected');
             });
             connection.on('error', (error: unknown) => {
-              const message = error instanceof Error ? error.message : String(error);
+              const message =
+                error instanceof Error ? error.message : String(error);
               mongoLog.error(`Error: ${message}`);
             });
             connection.on('disconnected', () => {
               mongoLog.error('Disconnected');
               if (inProduction && failFastOnDisconnect) {
-                mongoLog.error('Fail-fast enabled: exiting process after Mongo disconnect');
+                mongoLog.error(
+                  'Fail-fast enabled: exiting process after Mongo disconnect',
+                );
                 setTimeout(() => process.exit(1), 250);
               }
             });
@@ -107,7 +120,7 @@ const mongoLog = new Logger('MongoDB');
     InstagramModule,
     ContactModule,
     ServicesContentModule,
-    AboutContentModule
+    AboutContentModule,
   ],
   controllers: [AppController],
   providers: [
@@ -116,5 +129,4 @@ const mongoLog = new Logger('MongoDB');
     { provide: APP_GUARD, useClass: RolesGuard },
   ],
 })
-
-export class AppModule { }
+export class AppModule {}

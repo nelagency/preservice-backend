@@ -1,25 +1,41 @@
-import type { Response } from 'express';
+import type { Request } from 'express';
 import { ServeurAuthService } from './serveur-auth.service';
+import { ConfigService } from '@nestjs/config';
 declare class ServeurLoginDto {
     email: string;
     mot_passe: string;
 }
+declare class ServeurAuthUser {
+    sub: string;
+    email: string;
+    role: 'serveur';
+    nom?: string;
+    isActive?: boolean;
+    realm: 'serveur';
+}
+type AuthRequest = Request & {
+    user?: ServeurAuthUser;
+};
 export declare class ServeurAuthController {
     private readonly auth;
-    constructor(auth: ServeurAuthService);
-    login(dto: ServeurLoginDto, req: any, res: Response): Promise<{
+    private readonly configService;
+    constructor(auth: ServeurAuthService, configService: ConfigService);
+    login(dto: ServeurLoginDto, req: AuthRequest): Promise<{
+        redirectTo: string;
         refresh_token: string;
         refresh_expires_at: Date;
         access_token: string;
         user: {
-            sub: any;
-            email: any;
-            role: string;
+            sub: string;
+            email: string;
+            role: "serveur";
             nom: string;
-            isActive: any;
-            realm: string;
+            isActive?: boolean;
+            realm: "serveur";
         };
     }>;
-    me(req: any): Promise<any>;
+    me(req: AuthRequest): (Express.User & ServeurAuthUser) | {
+        error: string;
+    };
 }
 export {};

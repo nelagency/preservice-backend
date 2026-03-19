@@ -45,7 +45,11 @@ __decorate([
     __metadata("design:type", mongoose_2.Types.ObjectId)
 ], Participation.prototype, "serveur", void 0);
 __decorate([
-    (0, mongoose_1.Prop)({ type: String, enum: Object.values(CandidatureStatus), default: CandidatureStatus.pending }),
+    (0, mongoose_1.Prop)({
+        type: String,
+        enum: Object.values(CandidatureStatus),
+        default: CandidatureStatus.pending,
+    }),
     __metadata("design:type", String)
 ], Participation.prototype, "candidatureStatus", void 0);
 __decorate([
@@ -53,7 +57,11 @@ __decorate([
     __metadata("design:type", Object)
 ], Participation.prototype, "role", void 0);
 __decorate([
-    (0, mongoose_1.Prop)({ type: String, enum: Object.values(AssignmentStatus), default: AssignmentStatus.none }),
+    (0, mongoose_1.Prop)({
+        type: String,
+        enum: Object.values(AssignmentStatus),
+        default: AssignmentStatus.none,
+    }),
     __metadata("design:type", String)
 ], Participation.prototype, "assignmentStatus", void 0);
 __decorate([

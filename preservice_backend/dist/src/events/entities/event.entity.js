@@ -80,12 +80,12 @@ __decorate([
     __metadata("design:type", String)
 ], Event.prototype, "title", void 0);
 __decorate([
-    (0, swagger_1.ApiProperty)({ description: 'Description de l`\'évènement' }),
+    (0, swagger_1.ApiProperty)({ description: "Description de l`'évènement" }),
     (0, mongoose_1.Prop)({ trim: true }),
     __metadata("design:type", String)
 ], Event.prototype, "description", void 0);
 __decorate([
-    (0, swagger_1.ApiProperty)({ description: 'Lieu de l\'événement' }),
+    (0, swagger_1.ApiProperty)({ description: "Lieu de l'événement" }),
     (0, mongoose_1.Prop)({ required: true, trim: true }),
     __metadata("design:type", String)
 ], Event.prototype, "location", void 0);
@@ -120,13 +120,31 @@ __decorate([
     __metadata("design:type", Number)
 ], Event.prototype, "nbServeur", void 0);
 __decorate([
-    (0, swagger_1.ApiProperty)({ description: "Status de l'évènement", enum: EventStatusEnum, default: EventStatusEnum.en_attente }),
-    (0, mongoose_1.Prop)({ type: String, enum: Object.values(EventStatusEnum), default: EventStatusEnum.en_attente, index: true }),
+    (0, swagger_1.ApiProperty)({
+        description: "Status de l'évènement",
+        enum: EventStatusEnum,
+        default: EventStatusEnum.en_attente,
+    }),
+    (0, mongoose_1.Prop)({
+        type: String,
+        enum: Object.values(EventStatusEnum),
+        default: EventStatusEnum.en_attente,
+        index: true,
+    }),
     __metadata("design:type", String)
 ], Event.prototype, "status", void 0);
 __decorate([
-    (0, swagger_1.ApiProperty)({ description: "Etat de l'évènement", enum: EventEtatEnum, default: EventEtatEnum.ouvert }),
-    (0, mongoose_1.Prop)({ type: String, enum: Object.values(EventEtatEnum), default: EventEtatEnum.ouvert, index: true }),
+    (0, swagger_1.ApiProperty)({
+        description: "Etat de l'évènement",
+        enum: EventEtatEnum,
+        default: EventEtatEnum.ouvert,
+    }),
+    (0, mongoose_1.Prop)({
+        type: String,
+        enum: Object.values(EventEtatEnum),
+        default: EventEtatEnum.ouvert,
+        index: true,
+    }),
     __metadata("design:type", String)
 ], Event.prototype, "etat", void 0);
 __decorate([
@@ -148,12 +166,19 @@ __decorate([
     __metadata("design:type", Array)
 ], Event.prototype, "gallery", void 0);
 __decorate([
-    (0, mongoose_1.Prop)({ type: [{ type: mongoose_2.Types.ObjectId, ref: 'BeforeAfterPair' }], default: [] }),
+    (0, mongoose_1.Prop)({
+        type: [{ type: mongoose_2.Types.ObjectId, ref: 'BeforeAfterPair' }],
+        default: [],
+    }),
     __metadata("design:type", Array)
 ], Event.prototype, "beforeAfter", void 0);
 exports.Event = Event = __decorate([
     (0, mongoose_1.Schema)({ timestamps: true })
 ], Event);
 exports.EventSchema = mongoose_1.SchemaFactory.createForClass(Event);
-exports.EventSchema.index({ title: 'text', description: 'text', 'client.name': 'text' });
+exports.EventSchema.index({
+    title: 'text',
+    description: 'text',
+    'client.name': 'text',
+});
 //# sourceMappingURL=event.entity.js.map

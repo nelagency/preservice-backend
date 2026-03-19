@@ -14,4 +14,3 @@ import { ServiceItem, ServiceItemSchema } from './entities/service-item.entity';
   providers: [ServicesContentService],
 })
 export class ServicesContentModule {}
-

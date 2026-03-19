@@ -8,12 +8,16 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
 var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
+var __param = (this && this.__param) || function (paramIndex, decorator) {
+    return function (target, key) { decorator(target, key, paramIndex); }
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.AppController = void 0;
 const common_1 = require("@nestjs/common");
 const swagger_1 = require("@nestjs/swagger");
 const app_service_1 = require("./app.service");
 const public_decorator_1 = require("./common/decorators/public.decorator");
+const cron_maintenance_1 = require("./scripts/cron-maintenance");
 let AppController = class AppController {
     appService;
     constructor(appService) {
@@ -24,6 +28,13 @@ let AppController = class AppController {
     }
     health() {
         return { ok: true, ts: Date.now() };
+    }
+    async cronMaintenance(key) {
+        const expectedKey = process.env.CRON_SECRET;
+        if (!expectedKey || key !== expectedKey) {
+            throw new common_1.UnauthorizedException('Invalid cron key');
+        }
+        return (0, cron_maintenance_1.runCronMaintenance)();
     }
 };
 exports.AppController = AppController;
@@ -55,6 +66,15 @@ __decorate([
     __metadata("design:paramtypes", []),
     __metadata("design:returntype", void 0)
 ], AppController.prototype, "health", null);
+__decorate([
+    (0, public_decorator_1.Public)(),
+    (0, common_1.Get)('cron/maintenance'),
+    (0, common_1.HttpCode)(common_1.HttpStatus.OK),
+    __param(0, (0, common_1.Query)('key')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", Promise)
+], AppController.prototype, "cronMaintenance", null);
 exports.AppController = AppController = __decorate([
     (0, swagger_1.ApiExcludeController)(),
     (0, swagger_1.ApiTags)('System'),

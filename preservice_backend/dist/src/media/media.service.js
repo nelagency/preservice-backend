@@ -35,7 +35,10 @@ let MediaService = class MediaService {
         this.eventModel = eventModel;
     }
     async requestR2Presign(params) {
-        const key = this.r2.buildObjectKey({ eventId: params.eventId, filename: params.filename });
+        const key = this.r2.buildObjectKey({
+            eventId: params.eventId,
+            filename: params.filename,
+        });
         const { url, headers } = await this.r2.presignPut(key, params.contentType);
         return { key, uploadUrl: url, headers };
     }
@@ -51,8 +54,11 @@ let MediaService = class MediaService {
             size: body.size,
             caption: body.caption,
             takenAt: body.takenAt ? new Date(body.takenAt) : undefined,
-            width: body.width, height: body.height,
-            uploader: body.uploaderId ? new mongoose_2.Types.ObjectId(body.uploaderId) : undefined,
+            width: body.width,
+            height: body.height,
+            uploader: body.uploaderId
+                ? new mongoose_2.Types.ObjectId(body.uploaderId)
+                : undefined,
             uploaderRole: body.uploaderRole,
             approved: true,
             publicUrl,
@@ -73,7 +79,9 @@ let MediaService = class MediaService {
             caption: body.caption,
             takenAt: body.takenAt ? new Date(body.takenAt) : undefined,
             duration: body.duration,
-            uploader: body.uploaderId ? new mongoose_2.Types.ObjectId(body.uploaderId) : undefined,
+            uploader: body.uploaderId
+                ? new mongoose_2.Types.ObjectId(body.uploaderId)
+                : undefined,
             uploaderRole: body.uploaderRole,
             approved: true,
             publicUrl: playbackUrl,
@@ -87,10 +95,14 @@ let MediaService = class MediaService {
         return updated;
     }
     async listByEvent(eventId) {
-        return this.mediaModel.find({ event: new mongoose_2.Types.ObjectId(eventId) }).sort({ createdAt: -1 });
+        return this.mediaModel
+            .find({ event: new mongoose_2.Types.ObjectId(eventId) })
+            .sort({ createdAt: -1 });
     }
     async listPairsByEvent(eventId) {
-        return this.pairModel.find({ event: new mongoose_2.Types.ObjectId(eventId) }).sort({ createdAt: -1 });
+        return this.pairModel
+            .find({ event: new mongoose_2.Types.ObjectId(eventId) })
+            .sort({ createdAt: -1 });
     }
     async createBeforeAfter(dto) {
         const pair = await this.pairModel.create({
@@ -115,8 +127,10 @@ let MediaService = class MediaService {
         if (asset.provider === media_asset_entity_1.MediaProvider.stream && asset.stream?.uid) {
             await this.stream.deleteVideo(asset.stream.uid);
         }
-        const pairs = await this.pairModel.find({ $or: [{ before: asset._id }, { after: asset._id }] });
-        const pairIds = pairs.map(p => p._id);
+        const pairs = await this.pairModel.find({
+            $or: [{ before: asset._id }, { after: asset._id }],
+        });
+        const pairIds = pairs.map((p) => p._id);
         if (pairIds.length) {
             await this.pairModel.deleteMany({ _id: { $in: pairIds } });
             await this.eventModel.updateMany({ beforeAfter: { $in: pairIds } }, { $pull: { beforeAfter: { $in: pairIds } } });

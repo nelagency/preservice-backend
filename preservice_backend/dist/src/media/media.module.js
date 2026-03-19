@@ -26,7 +26,7 @@ exports.MediaModule = MediaModule = __decorate([
                 { name: media_asset_entity_1.MediaAsset.name, schema: media_asset_entity_1.MediaAssetSchema },
                 { name: before_after_entity_1.BeforeAfterPair.name, schema: before_after_entity_1.BeforeAfterPairSchema },
                 { name: event_entity_1.Event.name, schema: event_entity_1.EventSchema },
-            ])
+            ]),
         ],
         controllers: [media_controller_1.MediaController],
         providers: [media_service_1.MediaService, r2_service_1.R2Service, stream_service_1.StreamService],

@@ -86,13 +86,20 @@ __decorate([
     __metadata("design:type", Number)
 ], CreateEventDto.prototype, "nbServeur", void 0);
 __decorate([
-    (0, swagger_1.ApiPropertyOptional)({ enum: event_entity_1.EventStatusEnum, default: event_entity_1.EventStatusEnum.en_attente }),
+    (0, swagger_1.ApiPropertyOptional)({
+        enum: event_entity_1.EventStatusEnum,
+        default: event_entity_1.EventStatusEnum.en_attente,
+    }),
     (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsEnum)(event_entity_1.EventStatusEnum),
     __metadata("design:type", String)
 ], CreateEventDto.prototype, "status", void 0);
 __decorate([
-    (0, swagger_1.ApiProperty)({ description: "Etat de l'évènement", enum: event_entity_1.EventEtatEnum, default: event_entity_1.EventEtatEnum.ouvert }),
+    (0, swagger_1.ApiProperty)({
+        description: "Etat de l'évènement",
+        enum: event_entity_1.EventEtatEnum,
+        default: event_entity_1.EventEtatEnum.ouvert,
+    }),
     (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsEnum)(event_entity_1.EventEtatEnum),
     __metadata("design:type", String)

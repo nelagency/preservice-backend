@@ -43,7 +43,8 @@ let RefreshTokensService = class RefreshTokensService {
         this.refreshExpiresIn = coerceExpires(raw, '7d');
     }
     cookieOptions(expiresAt) {
-        const secure = String(this.configService.get('auth.cookieSecure')).toLowerCase() === 'true';
+        const secure = String(this.configService.get('auth.cookieSecure')).toLowerCase() ===
+            'true';
         const domain = this.configService.get('auth.cookieDomain') || undefined;
         return {
             httpOnly: true,
@@ -63,7 +64,9 @@ let RefreshTokensService = class RefreshTokensService {
                 jwtid: (0, crypto_1.randomUUID)(),
             });
             const decoded = this.jwt.decode(token);
-            const exp = decoded?.exp;
+            const exp = decoded && typeof decoded === 'object' && 'exp' in decoded
+                ? decoded.exp
+                : undefined;
             if (!exp)
                 throw new Error('No exp in refresh token');
             const expiresAt = new Date(exp * 1000);
@@ -79,19 +82,23 @@ let RefreshTokensService = class RefreshTokensService {
                 });
                 return { token, expiresAt, cookie: this.cookieOptions(expiresAt) };
             }
-            catch (e) {
-                if (e?.code === 11000) {
+            catch (error) {
+                if (typeof error === 'object' &&
+                    error !== null &&
+                    'code' in error &&
+                    error.code === 11000) {
                     continue;
                 }
-                throw e;
+                throw error;
             }
         }
         throw new common_1.ConflictException('Failed to generate a unique refresh token');
     }
     async verifyAndRotate(oldToken, userIdHint, expectedAccountType = 'user', meta) {
-        let payload;
         try {
-            payload = this.jwt.verify(oldToken, { secret: this.refreshSecret });
+            this.jwt.verify(oldToken, {
+                secret: this.refreshSecret,
+            });
         }
         catch {
             throw new common_1.UnauthorizedException('Refresh token invalide/expiré');
@@ -108,19 +115,29 @@ let RefreshTokensService = class RefreshTokensService {
         const { token: newToken, expiresAt } = await this.generate(String(doc.userId), doc.accountType, meta);
         doc.replacedByHash = sha256(newToken);
         await doc.save();
-        return { newToken, userId: String(doc.userId), expiresAt, cookie: this.cookieOptions(expiresAt), accountType: doc.accountType, };
+        return {
+            newToken,
+            userId: String(doc.userId),
+            expiresAt,
+            cookie: this.cookieOptions(expiresAt),
+            accountType: doc.accountType,
+        };
     }
     async revoke(token) {
         const hash = sha256(token);
         await this.model.updateOne({ tokenHash: hash }, { $set: { revokedAt: new Date() } });
     }
     async revokeAllForUser(userId, accountType) {
-        const query = { userId: new mongoose_2.Types.ObjectId(userId) };
+        const filter = {
+            userId: new mongoose_2.Types.ObjectId(userId),
+        };
         if (accountType)
-            query.accountType = accountType;
-        await this.model.updateMany({ userId: new mongoose_2.Types.ObjectId(userId) }, { $set: { revokedAt: new Date() } });
+            filter.accountType = accountType;
+        await this.model.updateMany(filter, { $set: { revokedAt: new Date() } });
     }
-    cookieOptionsPublic(expiresAt) { return this.cookieOptions(expiresAt); }
+    cookieOptionsPublic(expiresAt) {
+        return this.cookieOptions(expiresAt);
+    }
 };
 exports.RefreshTokensService = RefreshTokensService;
 exports.RefreshTokensService = RefreshTokensService = __decorate([

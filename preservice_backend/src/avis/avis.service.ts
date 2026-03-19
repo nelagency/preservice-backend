@@ -7,7 +7,7 @@ import { Avi, AvisDocument } from './entities/avi.entity';
 
 @Injectable()
 export class AvisService {
-  constructor(@InjectModel(Avi.name) private model: Model<AvisDocument>) { }
+  constructor(@InjectModel(Avi.name) private model: Model<AvisDocument>) {}
 
   async create(dto: CreateAviDto) {
     const payload: any = {
@@ -45,7 +45,10 @@ export class AvisService {
     if (dto.client) payload.client = new Types.ObjectId(dto.client);
     if (dto.event) payload.event = new Types.ObjectId(dto.event);
 
-    const updated = await this.model.findByIdAndUpdate(id, payload, { new: true }).lean().populate('client', 'event');
+    const updated = await this.model
+      .findByIdAndUpdate(id, payload, { new: true })
+      .lean()
+      .populate('client', 'event');
     if (!updated) throw new NotFoundException('Avis not found');
     return updated;
   }

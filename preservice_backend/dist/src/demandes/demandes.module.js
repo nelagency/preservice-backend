@@ -17,7 +17,9 @@ let DemandesModule = class DemandesModule {
 exports.DemandesModule = DemandesModule;
 exports.DemandesModule = DemandesModule = __decorate([
     (0, common_1.Module)({
-        imports: [mongoose_1.MongooseModule.forFeature([{ name: demande_entity_1.Demande.name, schema: demande_entity_1.DemandeSchema }])],
+        imports: [
+            mongoose_1.MongooseModule.forFeature([{ name: demande_entity_1.Demande.name, schema: demande_entity_1.DemandeSchema }]),
+        ],
         controllers: [demandes_controller_1.DemandesController],
         providers: [demandes_service_1.DemandesService],
     })

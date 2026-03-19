@@ -31,10 +31,17 @@ let DemandesService = class DemandesService {
         return created.toJSON();
     }
     async findAll() {
-        return this.model.find().sort({ createdAt: -1 }).lean().populate('client', 'nom email');
+        return this.model
+            .find()
+            .sort({ createdAt: -1 })
+            .lean()
+            .populate('client', 'nom email');
     }
     async findOne(id) {
-        const doc = await this.model.findById(id).lean().populate('client', 'nom email');
+        const doc = await this.model
+            .findById(id)
+            .lean()
+            .populate('client', 'nom email');
         if (!doc)
             throw new common_1.NotFoundException('Demande not found');
         return doc;
@@ -45,7 +52,10 @@ let DemandesService = class DemandesService {
             payload.client = new mongoose_2.Types.ObjectId(dto.client);
         if (dto.date_proposee)
             payload.date_proposee = new Date(dto.date_proposee);
-        const updated = await this.model.findByIdAndUpdate(id, payload, { new: true }).lean().populate('client');
+        const updated = await this.model
+            .findByIdAndUpdate(id, payload, { new: true })
+            .lean()
+            .populate('client');
         if (!updated)
             throw new common_1.NotFoundException('Demande not found');
         return updated;
@@ -57,10 +67,10 @@ let DemandesService = class DemandesService {
         return { success: true };
     }
     typesKV() {
-        return Object.values(event_entity_1.EventTypeEnum).map(v => ({ key: v, value: v }));
+        return Object.values(event_entity_1.EventTypeEnum).map((v) => ({ key: v, value: v }));
     }
     statusesKV() {
-        return Object.values(demande_entity_1.DemandeStatusEnum).map(v => ({ key: v, value: v }));
+        return Object.values(demande_entity_1.DemandeStatusEnum).map((v) => ({ key: v, value: v }));
     }
 };
 exports.DemandesService = DemandesService;

@@ -37,12 +37,15 @@ __decorate([
     __metadata("design:type", mongoose_2.Types.ObjectId)
 ], Avi.prototype, "client", void 0);
 __decorate([
-    (0, swagger_1.ApiProperty)({ description: "Événement (Event id) associé" }),
+    (0, swagger_1.ApiProperty)({ description: 'Événement (Event id) associé' }),
     (0, mongoose_1.Prop)({ type: mongoose_2.Types.ObjectId, ref: 'Event', required: true, index: true }),
     __metadata("design:type", mongoose_2.Types.ObjectId)
 ], Avi.prototype, "event", void 0);
 __decorate([
-    (0, swagger_1.ApiPropertyOptional)({ description: 'Affiché (true) ou masqué (false)', default: true }),
+    (0, swagger_1.ApiPropertyOptional)({
+        description: 'Affiché (true) ou masqué (false)',
+        default: true,
+    }),
     (0, mongoose_1.Prop)({ type: Boolean, default: true }),
     __metadata("design:type", Boolean)
 ], Avi.prototype, "etat", void 0);

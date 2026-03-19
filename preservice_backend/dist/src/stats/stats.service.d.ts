@@ -11,6 +11,7 @@ export declare class StatsService {
     private avis;
     constructor(events: Model<EventDocument>, demandes: Model<DemandeDocument>, parts: Model<ParticipationDocument>, avis: Model<AvisDocument>);
     private revenueExpr;
+    private eventDateExpr;
     overview(): Promise<OverviewDto>;
     private ratioConfirmed;
     private candidaturesParEvent;

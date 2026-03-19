@@ -17,7 +17,9 @@ let AvisModule = class AvisModule {
 exports.AvisModule = AvisModule;
 exports.AvisModule = AvisModule = __decorate([
     (0, common_1.Module)({
-        imports: [mongoose_1.MongooseModule.forFeature([{ name: avi_entity_1.Avi.name, schema: avi_entity_1.AvisSchema }])],
+        imports: [
+            mongoose_1.MongooseModule.forFeature([{ name: avi_entity_1.Avi.name, schema: avi_entity_1.AvisSchema }]),
+        ],
         controllers: [avis_controller_1.AvisController],
         providers: [avis_service_1.AvisService],
     })

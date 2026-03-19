@@ -2,10 +2,11 @@ import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document } from 'mongoose';
 
-export type AboutContentDocument = AboutContent & Document & {
-  createdAt: Date;
-  updatedAt: Date;
-};
+export type AboutContentDocument = AboutContent &
+  Document & {
+    createdAt: Date;
+    updatedAt: Date;
+  };
 
 @Schema({ _id: false })
 class AboutSection {
@@ -48,4 +49,3 @@ export class AboutContent {
 }
 
 export const AboutContentSchema = SchemaFactory.createForClass(AboutContent);
-

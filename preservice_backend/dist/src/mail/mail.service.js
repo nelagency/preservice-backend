@@ -25,12 +25,16 @@ let MailService = MailService_1 = class MailService {
         const dd = new Date(d);
         if (isNaN(+dd))
             return '—';
-        return dd.toLocaleString('fr-FR', { dateStyle: 'long', timeStyle: undefined });
+        return dd.toLocaleString('fr-FR', {
+            dateStyle: 'long',
+            timeStyle: undefined,
+        });
     }
     async participationApproved(serveur, event, opts) {
         const appUrl = process.env.FRONTEND_BASE_URL ?? 'http://localhost:3001';
         const href = opts?.ctaHref ?? `${appUrl}/serveur`;
-        const subject = opts?.subject ?? `Votre candidature à “${event.title ?? 'Évènement'}” est confirmée`;
+        const subject = opts?.subject ??
+            `Votre candidature à “${event.title ?? 'Évènement'}” est confirmée`;
         const intro = opts?.intro ??
             `Bonne nouvelle ! Votre candidature à l’évènement <strong>${event.title ?? '—'}</strong> a été <strong>confirmée</strong>.`;
         const outro = opts?.outro ??
@@ -40,7 +44,8 @@ let MailService = MailService_1 = class MailService {
             subject,
             template: 'participation-approved',
             context: {
-                name: [serveur.nom, serveur.prenom].filter(Boolean).join(' ') || 'Cher(ère) serveur(se)',
+                name: [serveur.nom, serveur.prenom].filter(Boolean).join(' ') ||
+                    'Cher(ère) serveur(se)',
                 eventTitle: event.title ?? '—',
                 eventDate: this.dateOnly(event.startdate ?? event.date),
                 eventLocation: event.location ?? '—',
@@ -62,7 +67,9 @@ let MailService = MailService_1 = class MailService {
                     intro: params.intro ?? '',
                     details: params.details ?? {},
                     ctaLabel: params.ctaLabel ?? 'Ouvrir',
-                    ctaHref: params.ctaHref ?? (process.env.FRONTEND_BASE_URL ?? 'http://localhost:3001'),
+                    ctaHref: params.ctaHref ??
+                        process.env.FRONTEND_BASE_URL ??
+                        'http://localhost:3001',
                     outro: params.outro ?? 'À bientôt,',
                 },
             });
@@ -75,9 +82,9 @@ let MailService = MailService_1 = class MailService {
         await this.generic(to, `Nouvel événement publié : ${event.title ?? ''}`, {
             intro: `Un nouvel évènement a été publié.`,
             details: {
-                "Évènement": event.title ?? '—',
-                "Date": this.dateOnly(event.startdate ?? event.date),
-                "Lieu": event.location ?? '—',
+                Évènement: event.title ?? '—',
+                Date: this.dateOnly(event.startdate ?? event.date),
+                Lieu: event.location ?? '—',
             },
             ctaLabel: 'Voir mes événements',
             ctaHref: `${process.env.FRONTEND_BASE_URL ?? 'http://localhost:3001'}/serveur`,
@@ -87,9 +94,9 @@ let MailService = MailService_1 = class MailService {
         await this.generic(to, `Demande de participation reçue`, {
             intro: `Un serveur a postulé à un événement.`,
             details: {
-                "Serveur": [serveur?.nom, serveur?.prenom].filter(Boolean).join(' ') || '—',
-                "Évènement": event?.title ?? '—',
-                "Date": this.dateOnly(event?.startdate ?? event?.date),
+                Serveur: [serveur?.nom, serveur?.prenom].filter(Boolean).join(' ') || '—',
+                Évènement: event?.title ?? '—',
+                Date: this.dateOnly(event?.startdate ?? event?.date),
             },
             ctaLabel: 'Gérer les candidatures',
             ctaHref: `${process.env.FRONTEND_BASE_URL ?? 'http://localhost:3001'}/admin/evenements`,
@@ -99,8 +106,8 @@ let MailService = MailService_1 = class MailService {
         await this.generic(to, `Feuille d’heures soumise`, {
             intro: `Un serveur a soumis ses horaires.`,
             details: {
-                "Serveur": [serveur?.nom, serveur?.prenom].filter(Boolean).join(' ') || '—',
-                "Évènement": event?.title ?? '—',
+                Serveur: [serveur?.nom, serveur?.prenom].filter(Boolean).join(' ') || '—',
+                Évènement: event?.title ?? '—',
             },
             ctaLabel: 'Revoir les feuilles',
             ctaHref: `${process.env.FRONTEND_BASE_URL ?? 'http://localhost:3001'}/admin/timesheets`,
@@ -111,7 +118,7 @@ let MailService = MailService_1 = class MailService {
             intro: status === 'approved'
                 ? `Votre feuille d’heures a été approuvée.`
                 : `Votre feuille d’heures a été rejetée.`,
-            details: comment ? { "Commentaire": comment } : undefined,
+            details: comment ? { Commentaire: comment } : undefined,
             ctaLabel: 'Voir mes feuilles',
             ctaHref: `${process.env.FRONTEND_BASE_URL ?? 'http://localhost:3001'}/serveur/timesheets`,
         });
@@ -121,7 +128,7 @@ let MailService = MailService_1 = class MailService {
             intro: finalize
                 ? `Le paiement de votre feuille d’heures a été finalisé.`
                 : `Un paiement partiel a été enregistré.`,
-            details: { "Montant": `${amount} TND` },
+            details: { Montant: `${amount} TND` },
             ctaLabel: 'Voir mes paiements',
             ctaHref: `${process.env.FRONTEND_BASE_URL ?? 'http://localhost:3001'}/serveur/timesheets`,
         });

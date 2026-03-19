@@ -46,7 +46,10 @@ let NotificationsService = NotificationsService_1 = class NotificationsService {
         const ids = (args.userIds || []).filter((x) => mongoose_2.Types.ObjectId.isValid(x));
         if (!ids.length)
             return { created: 0 };
-        const users = await this.userModel.find({ _id: { $in: ids } }).select('_id email').lean();
+        const users = await this.userModel
+            .find({ _id: { $in: ids } })
+            .select('_id email')
+            .lean();
         if (!users.length)
             return { created: 0 };
         const docs = await this.notifModel.insertMany(users.map((u) => ({
@@ -54,14 +57,16 @@ let NotificationsService = NotificationsService_1 = class NotificationsService {
             recipientModel: 'User',
             type: args.type,
             payload: args.payload ?? {},
-            actor: args.actorId && mongoose_2.Types.ObjectId.isValid(args.actorId) ? new mongoose_2.Types.ObjectId(args.actorId) : undefined,
+            actor: args.actorId && mongoose_2.Types.ObjectId.isValid(args.actorId)
+                ? new mongoose_2.Types.ObjectId(args.actorId)
+                : undefined,
             actorModel: args.actorModel ?? 'User',
             title: args.title,
             message: args.message,
             read: false,
         })));
         try {
-            const userIds = users.map(u => u._id.toString());
+            const userIds = users.map((u) => u._id.toString());
             this.gw?.emitToUsers(userIds, {
                 type: args.type,
                 title: args.title,
@@ -86,7 +91,10 @@ let NotificationsService = NotificationsService_1 = class NotificationsService {
             this.log.warn('[pushToAdmins] Aucun admin/superadmin trouvé');
             return { created: 0 };
         }
-        return this.pushToUsers({ ...args, userIds: admins.map((a) => a._id.toString()) });
+        return this.pushToUsers({
+            ...args,
+            userIds: admins.map((a) => a._id.toString()),
+        });
     }
     async pushToServeurs(args) {
         const ids = (args.serveurIds || []).filter((x) => mongoose_2.Types.ObjectId.isValid(x));
@@ -103,14 +111,16 @@ let NotificationsService = NotificationsService_1 = class NotificationsService {
             recipientModel: 'Serveur',
             type: args.type,
             payload: args.payload ?? {},
-            actor: args.actorId && mongoose_2.Types.ObjectId.isValid(args.actorId) ? new mongoose_2.Types.ObjectId(args.actorId) : undefined,
+            actor: args.actorId && mongoose_2.Types.ObjectId.isValid(args.actorId)
+                ? new mongoose_2.Types.ObjectId(args.actorId)
+                : undefined,
             actorModel: args.actorModel ?? 'User',
             title: args.title,
             message: args.message,
             read: false,
         })));
         try {
-            const serveurIds = serveurs.map(s => s._id.toString());
+            const serveurIds = serveurs.map((s) => s._id.toString());
             this.gw?.emitToServeurs(serveurIds, {
                 type: args.type,
                 title: args.title,
@@ -131,9 +141,15 @@ let NotificationsService = NotificationsService_1 = class NotificationsService {
         const serveurId = payload?.serveurId || payload?.serveur;
         const timesheetId = payload?.timesheetId;
         const [event, serveur, ts] = await Promise.all([
-            eventId && mongoose_2.Types.ObjectId.isValid(eventId) ? this.eventModel.findById(eventId).lean() : null,
-            serveurId && mongoose_2.Types.ObjectId.isValid(serveurId) ? this.serveurModel.findById(serveurId).lean() : null,
-            timesheetId && mongoose_2.Types.ObjectId.isValid(timesheetId) ? this.tsModel.findById(timesheetId).lean() : null,
+            eventId && mongoose_2.Types.ObjectId.isValid(eventId)
+                ? this.eventModel.findById(eventId).lean()
+                : null,
+            serveurId && mongoose_2.Types.ObjectId.isValid(serveurId)
+                ? this.serveurModel.findById(serveurId).lean()
+                : null,
+            timesheetId && mongoose_2.Types.ObjectId.isValid(timesheetId)
+                ? this.tsModel.findById(timesheetId).lean()
+                : null,
         ]);
         return { event, serveur, ts };
     }
@@ -165,17 +181,26 @@ let NotificationsService = NotificationsService_1 = class NotificationsService {
             case 'TIMESHEET_PAID':
                 return this.mail.timesheetPaidServeur(to, Number(payload?.amount || 0), !!payload?.finalize);
             default:
-                return this.mail.generic(to, 'Notification', { intro: 'Vous avez une nouvelle notification.' });
+                return this.mail.generic(to, 'Notification', {
+                    intro: 'Vous avez une nouvelle notification.',
+                });
         }
     }
     async listMine(recipientId, model, limit = 50, before) {
-        const q = { recipient: new mongoose_2.Types.ObjectId(recipientId), recipientModel: model };
+        const q = {
+            recipient: new mongoose_2.Types.ObjectId(recipientId),
+            recipientModel: model,
+        };
         if (before)
             q.createdAt = { $lt: new Date(before) };
         return this.notifModel.find(q).sort({ createdAt: -1 }).limit(limit).lean();
     }
     async unreadCount(recipientId, model) {
-        return this.notifModel.countDocuments({ recipient: recipientId, recipientModel: model, read: false });
+        return this.notifModel.countDocuments({
+            recipient: recipientId,
+            recipientModel: model,
+            read: false,
+        });
     }
     async markRead(recipientId, model, id) {
         await this.notifModel.updateOne({ _id: id, recipient: recipientId, recipientModel: model }, { $set: { read: true } });

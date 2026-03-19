@@ -1,7 +1,19 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
 import {
-  ApiBearerAuth, ApiTags, ApiOperation, ApiOkResponse, ApiCreatedResponse,
-  ApiBody
+  Controller,
+  Get,
+  Post,
+  Body,
+  Patch,
+  Param,
+  Delete,
+} from '@nestjs/common';
+import {
+  ApiBearerAuth,
+  ApiTags,
+  ApiOperation,
+  ApiOkResponse,
+  ApiCreatedResponse,
+  ApiBody,
 } from '@nestjs/swagger';
 import { AvisService } from './avis.service';
 import { CreateAviDto } from './dto/create-avi.dto';
@@ -19,7 +31,7 @@ export class AvisController {
   @Post()
   @ApiOperation({
     summary: "Création d'un avis",
-    description: "Crée un nouvel avis pour un événement par un client.",
+    description: 'Crée un nouvel avis pour un événement par un client.',
     operationId: 'avisCreate',
   })
   @ApiBody({
@@ -28,13 +40,13 @@ export class AvisController {
       default: {
         value: {
           note: 5,
-          commentaire: "Parfait, service impeccable.",
-          client: "6653fe1c2b8a0c0f5e2c1a11",
-          event:  "6653ff7a2b8a0c0f5e2c1a22",
-          etat: true
-        }
-      }
-    }
+          commentaire: 'Parfait, service impeccable.',
+          client: '6653fe1c2b8a0c0f5e2c1a11',
+          event: '6653ff7a2b8a0c0f5e2c1a22',
+          etat: true,
+        },
+      },
+    },
   })
   @ApiCreatedResponse({ description: 'Avis créé.' })
   //@Roles('admin', 'superadmin')
@@ -57,7 +69,7 @@ export class AvisController {
   @Get(':id')
   @ApiOperation({
     summary: "Détail d'un avis",
-    description: "Retourne un avis par identifiant.",
+    description: 'Retourne un avis par identifiant.',
     operationId: 'avisFindOne',
   })
   @ApiOkResponse({ description: 'Détail de l’avis.' })
@@ -69,7 +81,7 @@ export class AvisController {
   @Patch(':id')
   @ApiOperation({
     summary: "Mise à jour d'un avis",
-    description: "Met à jour un avis existant.",
+    description: 'Met à jour un avis existant.',
     operationId: 'avisUpdate',
   })
   @ApiBody({
@@ -78,18 +90,17 @@ export class AvisController {
       default: {
         value: {
           note: 4,
-          commentaire: "Très bien, quelques retards.",
-          etat: true
-        }
-      }
-    }
+          commentaire: 'Très bien, quelques retards.',
+          etat: true,
+        },
+      },
+    },
   })
   @ApiOkResponse({ description: 'Avis mis à jour.' })
   @Roles('admin', 'superadmin')
   update(@Param('id') id: string, @Body() updateAviDto: UpdateAviDto) {
     return this.avisService.update(id, updateAviDto);
   }
-
 
   @Delete(':id')
   @ApiOperation({

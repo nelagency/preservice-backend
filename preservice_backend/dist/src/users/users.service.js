@@ -76,7 +76,9 @@ let UsersService = class UsersService {
             const salt = await bcrypt.genSalt(10);
             payload.mot_passe = await bcrypt.hash(dto.mot_passe, salt);
         }
-        const updated = await this.model.findByIdAndUpdate(id, payload, { new: true }).lean();
+        const updated = await this.model
+            .findByIdAndUpdate(id, payload, { new: true })
+            .lean();
         if (!updated)
             throw new common_1.NotFoundException('User not found');
         return updated;

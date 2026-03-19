@@ -1,5 +1,11 @@
 import { Body, Controller, Get, Param, Patch, Post } from '@nestjs/common';
-import { ApiBearerAuth, ApiBody, ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
+import {
+  ApiBearerAuth,
+  ApiBody,
+  ApiOkResponse,
+  ApiOperation,
+  ApiTags,
+} from '@nestjs/swagger';
 import { Public } from 'src/common/decorators/public.decorator';
 import { Roles } from 'src/common/decorators/roles.decorator';
 import { ContactService } from './contact.service';
@@ -46,8 +52,10 @@ export class ContactController {
   })
   @ApiBody({ type: UpdateContactMessageStatusDto })
   @ApiOkResponse({ description: 'Statut mis à jour.' })
-  updateStatus(@Param('id') id: string, @Body() dto: UpdateContactMessageStatusDto) {
+  updateStatus(
+    @Param('id') id: string,
+    @Body() dto: UpdateContactMessageStatusDto,
+  ) {
     return this.contactService.updateStatus(id, dto);
   }
 }
-

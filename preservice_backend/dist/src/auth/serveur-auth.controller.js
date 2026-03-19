@@ -17,6 +17,7 @@ const common_1 = require("@nestjs/common");
 const swagger_1 = require("@nestjs/swagger");
 const class_validator_1 = require("class-validator");
 const serveur_auth_service_1 = require("./serveur-auth.service");
+const config_1 = require("@nestjs/config");
 const public_decorator_1 = require("../common/decorators/public.decorator");
 class ServeurLoginDto {
     email;
@@ -47,15 +48,19 @@ class ServeurLoginResp {
 }
 let ServeurAuthController = class ServeurAuthController {
     auth;
-    constructor(auth) {
+    configService;
+    constructor(auth, configService) {
         this.auth = auth;
+        this.configService = configService;
     }
-    async login(dto, req, res) {
+    async login(dto, req) {
         const meta = { ua: req.headers['user-agent'], ip: req.ip };
         const result = await this.auth.login(dto.email, dto.mot_passe, meta);
-        return result;
+        const frontendBase = (this.configService.get('FRONTEND_BASE_URL') ||
+            'https://dashboard.nelagency.com').replace(/\/$/, '');
+        return { ...result, redirectTo: `${frontendBase}/serveur` };
     }
-    async me(req) {
+    me(req) {
         if (req.user?.realm !== 'serveur') {
             return { error: 'Wrong realm' };
         }
@@ -75,7 +80,9 @@ __decorate([
     (0, swagger_1.ApiBody)({
         type: ServeurLoginDto,
         examples: {
-            default: { value: { email: 'ali.bensalem@example.com', mot_passe: 'Passw0rd!' } },
+            default: {
+                value: { email: 'ali.bensalem@example.com', mot_passe: 'Passw0rd!' },
+            },
         },
     }),
     (0, swagger_1.ApiOkResponse)({
@@ -97,13 +104,14 @@ __decorate([
             },
         },
     }),
-    (0, swagger_1.ApiUnauthorizedResponse)({ description: 'Identifiants invalides ou compte inactif.' }),
+    (0, swagger_1.ApiUnauthorizedResponse)({
+        description: 'Identifiants invalides ou compte inactif.',
+    }),
     (0, swagger_1.ApiResponse)({ status: 500, description: 'Erreur serveur.' }),
     __param(0, (0, common_1.Body)()),
     __param(1, (0, common_1.Req)()),
-    __param(2, (0, common_1.Res)({ passthrough: true })),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [ServeurLoginDto, Object, Object]),
+    __metadata("design:paramtypes", [ServeurLoginDto, Object]),
     __metadata("design:returntype", Promise)
 ], ServeurAuthController.prototype, "login", null);
 __decorate([
@@ -128,15 +136,18 @@ __decorate([
             },
         },
     }),
-    (0, swagger_1.ApiUnauthorizedResponse)({ description: 'Token manquant/expiré ou realm non autorisé.' }),
+    (0, swagger_1.ApiUnauthorizedResponse)({
+        description: 'Token manquant/expiré ou realm non autorisé.',
+    }),
     __param(0, (0, common_1.Req)()),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [Object]),
-    __metadata("design:returntype", Promise)
+    __metadata("design:returntype", void 0)
 ], ServeurAuthController.prototype, "me", null);
 exports.ServeurAuthController = ServeurAuthController = __decorate([
     (0, swagger_1.ApiTags)('Auth Serveur'),
     (0, common_1.Controller)('auth-serveur'),
-    __metadata("design:paramtypes", [serveur_auth_service_1.ServeurAuthService])
+    __metadata("design:paramtypes", [serveur_auth_service_1.ServeurAuthService,
+        config_1.ConfigService])
 ], ServeurAuthController);
 //# sourceMappingURL=serveur-auth.controller.js.map

@@ -1,6 +1,19 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
 import {
-  ApiBearerAuth, ApiTags, ApiOperation, ApiOkResponse, ApiCreatedResponse, ApiBody
+  Controller,
+  Get,
+  Post,
+  Body,
+  Patch,
+  Param,
+  Delete,
+} from '@nestjs/common';
+import {
+  ApiBearerAuth,
+  ApiTags,
+  ApiOperation,
+  ApiOkResponse,
+  ApiCreatedResponse,
+  ApiBody,
 } from '@nestjs/swagger';
 import { DemandesService } from './demandes.service';
 import { CreateDemandeDto } from './dto/create-demande.dto';
@@ -25,14 +38,14 @@ export class DemandesController {
     examples: {
       default: {
         value: {
-          client: "665400000000000000000001",
-          type: "Mariages",
-          date_proposee: "2025-12-20T17:00:00.000Z",
+          client: '665400000000000000000001',
+          type: 'Mariages',
+          date_proposee: '2025-12-20T17:00:00.000Z',
           nb_serveurs: 5,
-          status: "en_attente"
-        }
-      }
-    }
+          status: 'en_attente',
+        },
+      },
+    },
   })
   @ApiCreatedResponse({ description: 'Demande créée.' })
   create(@Body() createDemandeDto: CreateDemandeDto) {
@@ -55,27 +68,33 @@ export class DemandesController {
   @Get('meta/types')
   @ApiOperation({
     summary: 'Types de demande',
-    description: 'Retourne les types possibles de demande sous forme { key, value }.',
+    description:
+      'Retourne les types possibles de demande sous forme { key, value }.',
     operationId: 'demandesTypesMeta',
   })
   @ApiOkResponse({ description: 'Types de demande (clé/valeur).' })
-  typesKV() { return this.demandesService.typesKV(); }
+  typesKV() {
+    return this.demandesService.typesKV();
+  }
 
   @Public()
   @Get('meta/statuses')
   @ApiOperation({
     summary: 'Statuts de demande',
-    description: 'Retourne les statuts possibles de demande sous forme { key, value }.',
+    description:
+      'Retourne les statuts possibles de demande sous forme { key, value }.',
     operationId: 'demandesStatutMeta',
   })
   @ApiOkResponse({ description: 'Types de demande (clé/valeur).' })
-  statusesKV() { return this.demandesService.statusesKV(); }
+  statusesKV() {
+    return this.demandesService.statusesKV();
+  }
 
   @Public()
   @Get(':id')
   @ApiOperation({
     summary: "Détail d'une demande",
-    description: "Retourne une demande par identifiant.",
+    description: 'Retourne une demande par identifiant.',
     operationId: 'demandesFindOne',
   })
   @ApiOkResponse({ description: 'Détail de la demande.' })
@@ -93,16 +112,16 @@ export class DemandesController {
   @ApiBody({
     type: UpdateDemandeDto,
     examples: {
-      statusOnly: { value: { status: "confirme" } },
+      statusOnly: { value: { status: 'confirme' } },
       full: {
         value: {
-          type: "Buffets",
-          date_proposee: "2025-12-22T19:00:00.000Z",
+          type: 'Buffets',
+          date_proposee: '2025-12-22T19:00:00.000Z',
           nb_serveurs: 7,
-          status: "en_attente"
-        }
-      }
-    }
+          status: 'en_attente',
+        },
+      },
+    },
   })
   @ApiOkResponse({ description: 'Demande mise à jour.' })
   update(@Param('id') id: string, @Body() updateDemandeDto: UpdateDemandeDto) {

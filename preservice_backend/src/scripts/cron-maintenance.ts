@@ -1,7 +1,13 @@
 import 'dotenv/config';
 import mongoose from 'mongoose';
-import { RefreshToken, RefreshTokenSchema } from '../auth/schemas/refresh-token.schema';
-import { BlacklistedToken, BlacklistedTokenSchema } from '../auth/schemas/blacklisted-token.schema';
+import {
+  RefreshToken,
+  RefreshTokenSchema,
+} from '../auth/schemas/refresh-token.schema';
+import {
+  BlacklistedToken,
+  BlacklistedTokenSchema,
+} from '../auth/schemas/blacklisted-token.schema';
 
 function envNumber(name: string, fallback: number): number {
   const raw = process.env[name];
@@ -20,8 +26,12 @@ export async function runCronMaintenance() {
   const blacklistRetentionDays = envNumber('CRON_BLACKLIST_RETENTION_DAYS', 7);
   const nowMs = Date.now();
 
-  const revokedCutoff = new Date(nowMs - revokedRetentionDays * 24 * 60 * 60 * 1000);
-  const blacklistCutoff = new Date(nowMs - blacklistRetentionDays * 24 * 60 * 60 * 1000);
+  const revokedCutoff = new Date(
+    nowMs - revokedRetentionDays * 24 * 60 * 60 * 1000,
+  );
+  const blacklistCutoff = new Date(
+    nowMs - blacklistRetentionDays * 24 * 60 * 60 * 1000,
+  );
 
   const wasDisconnected = mongoose.connection.readyState === 0;
   if (wasDisconnected) {

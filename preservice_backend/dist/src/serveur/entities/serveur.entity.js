@@ -57,7 +57,10 @@ __decorate([
     __metadata("design:type", String)
 ], Serveur.prototype, "mot_passe", void 0);
 __decorate([
-    (0, swagger_1.ApiPropertyOptional)({ description: "Nombre d'années d'expérience", minimum: 0 }),
+    (0, swagger_1.ApiPropertyOptional)({
+        description: "Nombre d'années d'expérience",
+        minimum: 0,
+    }),
     (0, mongoose_1.Prop)({ type: Number, default: 0, min: 0 }),
     __metadata("design:type", Number)
 ], Serveur.prototype, "years", void 0);
@@ -68,7 +71,12 @@ __decorate([
 ], Serveur.prototype, "skills", void 0);
 __decorate([
     (0, swagger_1.ApiProperty)({ enum: ServeurStatus, default: ServeurStatus.disponible }),
-    (0, mongoose_1.Prop)({ type: String, enum: Object.values(ServeurStatus), default: ServeurStatus.disponible, index: true }),
+    (0, mongoose_1.Prop)({
+        type: String,
+        enum: Object.values(ServeurStatus),
+        default: ServeurStatus.disponible,
+        index: true,
+    }),
     __metadata("design:type", String)
 ], Serveur.prototype, "status", void 0);
 __decorate([

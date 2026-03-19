@@ -47,7 +47,7 @@ __decorate([
     (0, common_1.Post)(),
     (0, swagger_1.ApiOperation)({
         summary: "Création d'un avis",
-        description: "Crée un nouvel avis pour un événement par un client.",
+        description: 'Crée un nouvel avis pour un événement par un client.',
         operationId: 'avisCreate',
     }),
     (0, swagger_1.ApiBody)({
@@ -56,13 +56,13 @@ __decorate([
             default: {
                 value: {
                     note: 5,
-                    commentaire: "Parfait, service impeccable.",
-                    client: "6653fe1c2b8a0c0f5e2c1a11",
-                    event: "6653ff7a2b8a0c0f5e2c1a22",
-                    etat: true
-                }
-            }
-        }
+                    commentaire: 'Parfait, service impeccable.',
+                    client: '6653fe1c2b8a0c0f5e2c1a11',
+                    event: '6653ff7a2b8a0c0f5e2c1a22',
+                    etat: true,
+                },
+            },
+        },
     }),
     (0, swagger_1.ApiCreatedResponse)({ description: 'Avis créé.' }),
     __param(0, (0, common_1.Body)()),
@@ -87,7 +87,7 @@ __decorate([
     (0, common_1.Get)(':id'),
     (0, swagger_1.ApiOperation)({
         summary: "Détail d'un avis",
-        description: "Retourne un avis par identifiant.",
+        description: 'Retourne un avis par identifiant.',
         operationId: 'avisFindOne',
     }),
     (0, swagger_1.ApiOkResponse)({ description: 'Détail de l’avis.' }),
@@ -101,7 +101,7 @@ __decorate([
     (0, common_1.Patch)(':id'),
     (0, swagger_1.ApiOperation)({
         summary: "Mise à jour d'un avis",
-        description: "Met à jour un avis existant.",
+        description: 'Met à jour un avis existant.',
         operationId: 'avisUpdate',
     }),
     (0, swagger_1.ApiBody)({
@@ -110,11 +110,11 @@ __decorate([
             default: {
                 value: {
                     note: 4,
-                    commentaire: "Très bien, quelques retards.",
-                    etat: true
-                }
-            }
-        }
+                    commentaire: 'Très bien, quelques retards.',
+                    etat: true,
+                },
+            },
+        },
     }),
     (0, swagger_1.ApiOkResponse)({ description: 'Avis mis à jour.' }),
     (0, roles_decorator_1.Roles)('admin', 'superadmin'),

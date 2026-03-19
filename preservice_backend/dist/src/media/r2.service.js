@@ -27,7 +27,11 @@ let R2Service = class R2Service {
         return `${base}/${(0, crypto_1.randomUUID)()}-${safe}`;
     }
     async presignPut(key, contentType, expiresSeconds = 900) {
-        const cmd = new client_s3_1.PutObjectCommand({ Bucket: this.bucket, Key: key, ContentType: contentType });
+        const cmd = new client_s3_1.PutObjectCommand({
+            Bucket: this.bucket,
+            Key: key,
+            ContentType: contentType,
+        });
         const url = await (0, s3_request_presigner_1.getSignedUrl)(this.s3, cmd, { expiresIn: expiresSeconds });
         return { url, headers: { 'Content-Type': contentType } };
     }

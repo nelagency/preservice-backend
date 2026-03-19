@@ -2,10 +2,11 @@ import { ApiProperty } from '@nestjs/swagger';
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document } from 'mongoose';
 
-export type ContactMessageDocument = ContactMessage & Document & {
-  createdAt: Date;
-  updatedAt: Date;
-};
+export type ContactMessageDocument = ContactMessage &
+  Document & {
+    createdAt: Date;
+    updatedAt: Date;
+  };
 
 export enum ContactMessageStatus {
   pending = 'pending',
@@ -30,7 +31,10 @@ export class ContactMessage {
   @Prop({ required: true, trim: true })
   message: string;
 
-  @ApiProperty({ enum: ContactMessageStatus, default: ContactMessageStatus.pending })
+  @ApiProperty({
+    enum: ContactMessageStatus,
+    default: ContactMessageStatus.pending,
+  })
   @Prop({
     type: String,
     enum: Object.values(ContactMessageStatus),
@@ -40,5 +44,5 @@ export class ContactMessage {
   status: ContactMessageStatus;
 }
 
-export const ContactMessageSchema = SchemaFactory.createForClass(ContactMessage);
-
+export const ContactMessageSchema =
+  SchemaFactory.createForClass(ContactMessage);

@@ -39,32 +39,33 @@ let EventsService = class EventsService {
         this.model = model;
         this.notif = notif;
     }
-    async create(dto) {
+    toPersistPayload(dto) {
         const payload = { ...dto };
-        if (dto.serveurs)
-            payload.serveurs = dto.serveurs.map((s) => new mongoose_2.Types.ObjectId(s));
-        if (dto.startdate)
-            payload.date = new Date(dto.startdate);
-        if (dto.enddate)
-            payload.date = new Date(dto.enddate);
+        if (dto.serveurs) {
+            payload.serveurs = dto.serveurs.map((id) => new mongoose_2.Types.ObjectId(id));
+        }
+        if (dto.startdate) {
+            payload.startdate = new Date(dto.startdate);
+        }
+        if (dto.enddate) {
+            payload.enddate = new Date(dto.enddate);
+        }
+        return payload;
+    }
+    async create(dto) {
+        const payload = this.toPersistPayload(dto);
         const created = await this.model.create(payload);
         return created.toJSON();
     }
-    async createEvent(dto, authorId, serveurIdsCiblés) {
-        const payload = { ...dto };
-        if (dto.serveurs)
-            payload.serveurs = dto.serveurs.map((s) => new mongoose_2.Types.ObjectId(s));
-        if (dto.startdate)
-            payload.date = new Date(dto.startdate);
-        if (dto.enddate)
-            payload.date = new Date(dto.enddate);
+    async createEvent(dto, authorId, serveurIdsCibles) {
+        const payload = this.toPersistPayload(dto);
         const created = await this.model.create(payload);
         await this.notif.pushToServeurs({
             type: 'EVENT_PUBLISHED',
-            serveurIds: serveurIdsCiblés,
-            payload: { eventId: created.id.toString() },
+            serveurIds: serveurIdsCibles,
+            payload: { eventId: String(created._id) },
             actorId: authorId,
-            title: 'Nouvel événement publié',
+            title: 'Nouvel evenement publie',
             message: created.description,
         });
         return created.toJSON();
@@ -79,14 +80,10 @@ let EventsService = class EventsService {
         return doc;
     }
     async update(id, dto) {
-        const payload = { ...dto };
-        if (dto.serveurs)
-            payload.serveurs = dto.serveurs.map((s) => new mongoose_2.Types.ObjectId(s));
-        if (dto.startdate)
-            payload.date = new Date(dto.startdate);
-        if (dto.enddate)
-            payload.date = new Date(dto.enddate);
-        const updated = await this.model.findByIdAndUpdate(id, payload, { new: true });
+        const payload = this.toPersistPayload(dto);
+        const updated = await this.model.findByIdAndUpdate(id, payload, {
+            new: true,
+        });
         if (!updated)
             throw new common_1.NotFoundException('Event not found');
         return updated;
@@ -104,19 +101,35 @@ let EventsService = class EventsService {
         const lastStart = startOfLastMonth(now);
         const dateExpr = { $ifNull: ['$startdate', '$createdAt'] };
         const thisMonthMatch = {
-            $expr: { $and: [{ $gte: [dateExpr, thisStart] }, { $lt: [dateExpr, nextStart] }] }
+            $expr: {
+                $and: [{ $gte: [dateExpr, thisStart] }, { $lt: [dateExpr, nextStart] }],
+            },
         };
         const lastMonthMatch = {
-            $expr: { $and: [{ $gte: [dateExpr, lastStart] }, { $lt: [dateExpr, thisStart] }] }
+            $expr: {
+                $and: [{ $gte: [dateExpr, lastStart] }, { $lt: [dateExpr, thisStart] }],
+            },
         };
-        const confirmedStatuses = ['confirme', 'confirmé', 'confirmed', 'CONFIRME', 'CONFIRMED'];
+        const confirmedStatuses = [
+            'confirme',
+            'confirme',
+            'confirmed',
+            'CONFIRME',
+            'CONFIRMED',
+        ];
         const amountNumberExpr = {
             $toDouble: {
                 $ifNull: [
-                    { $cond: [{ $isNumber: '$amount' }, '$amount', { $toDouble: { $ifNull: ['$amount', 0] } }] },
-                    0
-                ]
-            }
+                    {
+                        $cond: [
+                            { $isNumber: '$amount' },
+                            '$amount',
+                            { $toDouble: { $ifNull: ['$amount', 0] } },
+                        ],
+                    },
+                    0,
+                ],
+            },
         };
         const [evThis, evLast] = await Promise.all([
             this.model.countDocuments(thisMonthMatch),
@@ -148,35 +161,69 @@ let EventsService = class EventsService {
         const revLast = revLastAgg[0]?.total ?? 0;
         const round1 = (n) => Math.round(n * 10) / 10;
         return [
-            { label: 'Événements du mois', value: evThis, difference: round1(pctChange(evThis, evLast)), inProgress: evThis >= evLast },
-            { label: 'Serveurs actifs (mois)', value: srvThisCount, difference: round1(pctChange(srvThisCount, srvLastCount)), inProgress: srvThisCount >= srvLastCount },
-            { label: 'Demandes en attente', value: waitThis, difference: round1(pctChange(waitThis, waitLast)), inProgress: waitThis <= waitLast ? false : true },
-            { label: 'Revenus du mois', value: revThis, difference: round1(pctChange(revThis, revLast)), inProgress: revThis >= revLast },
+            {
+                label: 'Evenements du mois',
+                value: evThis,
+                difference: round1(pctChange(evThis, evLast)),
+                inProgress: evThis >= evLast,
+            },
+            {
+                label: 'Serveurs actifs (mois)',
+                value: srvThisCount,
+                difference: round1(pctChange(srvThisCount, srvLastCount)),
+                inProgress: srvThisCount >= srvLastCount,
+            },
+            {
+                label: 'Demandes en attente',
+                value: waitThis,
+                difference: round1(pctChange(waitThis, waitLast)),
+                inProgress: waitThis > waitLast,
+            },
+            {
+                label: 'Revenus du mois',
+                value: revThis,
+                difference: round1(pctChange(revThis, revLast)),
+                inProgress: revThis >= revLast,
+            },
         ];
     }
     async recent() {
-        return this.model.find().sort({ createdAt: -1 }).limit(4).populate('serveurs');
+        return this.model
+            .find()
+            .sort({ createdAt: -1 })
+            .limit(4)
+            .populate('serveurs');
     }
     async typesPercent() {
         const total = await this.model.estimatedDocumentCount();
         if (total === 0) {
-            return Object.values(event_entity_1.EventTypeEnum).map((t) => ({ label: t, count: 0, percent: 0 }));
+            return Object.values(event_entity_1.EventTypeEnum).map((type) => ({
+                label: type,
+                count: 0,
+                percent: 0,
+            }));
         }
         const agg = await this.model.aggregate([
             { $group: { _id: '$type', count: { $sum: 1 } } },
             { $sort: { count: -1 } },
         ]);
-        return agg.map((x) => ({
-            label: x._id,
-            count: x.count,
-            percent: Math.round((x.count / total) * 100),
+        return agg.map((item) => ({
+            label: item._id,
+            count: item.count,
+            percent: Math.round((item.count / total) * 100),
         }));
     }
     typesKV() {
-        return Object.entries(event_entity_1.EventTypeEnum).map(([key, value]) => ({ key, value }));
+        return Object.entries(event_entity_1.EventTypeEnum).map(([key, value]) => ({
+            key,
+            value,
+        }));
     }
     statusesKV() {
-        return Object.entries(event_entity_1.EventStatusEnum).map(([key, value]) => ({ key, value }));
+        return Object.entries(event_entity_1.EventStatusEnum).map(([key, value]) => ({
+            key,
+            value,
+        }));
     }
 };
 exports.EventsService = EventsService;

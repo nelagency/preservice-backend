@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Test Auth Local</title>
+  <style>
+    body { font-family: Arial, sans-serif; max-width: 520px; margin: 40px auto; }
+    input, select, button { width: 100%; padding: 10px; margin: 8px 0; }
+    pre { background: #f4f4f4; padding: 12px; overflow: auto; white-space: pre-wrap; }
+    .hint { font-size: 13px; color: #555; margin-top: -4px; margin-bottom: 10px; }
+    .row { display: flex; gap: 8px; }
+    .row button { margin: 0; }
+  </style>
+</head>
+<body>
+  <h2>Test Auth rapide</h2>
+  <p class="hint">Page de test: <strong>http://localhost:3001/test-login.local.html</strong></p>
+  <p class="hint">API locale attendue: <strong>http://localhost:3000/api</strong> | API Render: <strong>https://preservice-backend.onrender.com/api</strong></p>
+
+  <label>API base URL</label>
+  <input id="apiBase" value="http://localhost:3000/api" />
+  <div class="row">
+    <button type="button" id="btnApiLocal">Utiliser API locale</button>
+    <button type="button" id="btnApiRender">Utiliser API Render</button>
+  </div>
+
+  <label>Action</label>
+  <select id="actionType">
+    <option value="login">Connexion</option>
+    <option value="register">Inscription</option>
+  </select>
+
+  <label>Type de compte</label>
+  <select id="accountType">
+    <option value="user">User/Admin</option>
+    <option value="serveur">Serveur</option>
+  </select>
+
+  <div id="registerFields" style="display:none;">
+    <label>Nom</label>
+    <input id="nom" placeholder="Ton nom" />
+
+    <label>Téléphone</label>
+    <input id="numeroTel" placeholder="+21620000099" />
+
+    <label>Adresse (optionnel)</label>
+    <input id="adresse" placeholder="Tunis" />
+  </div>
+
+  <label>Email</label>
+  <input id="email" type="email" placeholder="email@example.com" />
+
+  <label>Mot de passe</label>
+  <input id="password" type="password" placeholder="******" />
+
+  <button id="btnSubmit">Envoyer</button>
+
+  <h3>Reponse</h3>
+  <pre id="out"></pre>
+
+  <script>
+    const out = document.getElementById("out");
+    const actionTypeEl = document.getElementById("actionType");
+    const accountTypeEl = document.getElementById("accountType");
+    const registerFieldsEl = document.getElementById("registerFields");
+    const apiBaseEl = document.getElementById("apiBase");
+
+    function refreshForm() {
+      const actionType = actionTypeEl.value;
+      const accountType = accountTypeEl.value;
+      registerFieldsEl.style.display = actionType === "register" ? "block" : "none";
+      if (actionType === "register" && accountType === "serveur") {
+        out.textContent = "Inscription serveur non disponible ici (pas de /auth-serveur/register dans ce backend).";
+      } else {
+        out.textContent = "";
+      }
+    }
+
+    actionTypeEl.addEventListener("change", refreshForm);
+    accountTypeEl.addEventListener("change", refreshForm);
+    document.getElementById("btnApiLocal").addEventListener("click", () => {
+      apiBaseEl.value = "http://localhost:3000/api";
+    });
+    document.getElementById("btnApiRender").addEventListener("click", () => {
+      apiBaseEl.value = "https://preservice-backend.onrender.com/api";
+    });
+    refreshForm();
+
+    document.getElementById("btnSubmit").addEventListener("click", async () => {
+      const apiBase = apiBaseEl.value.replace(/\/$/, "");
+      const actionType = actionTypeEl.value;
+      const accountType = accountTypeEl.value;
+      const email = document.getElementById("email").value.trim();
+      const mot_passe = document.getElementById("password").value;
+      const nom = document.getElementById("nom").value.trim();
+      const numero_tel = document.getElementById("numeroTel").value.trim();
+      const adresse = document.getElementById("adresse").value.trim();
+
+      let endpoint = "";
+      let payload = {};
+
+      if (actionType === "login") {
+        endpoint = accountType === "serveur" ? "/auth-serveur/login" : "/auth/login";
+        payload = { email, mot_passe };
+      } else {
+        if (accountType === "serveur") {
+          out.textContent = "Inscription serveur non disponible ici.";
+          return;
+        }
+        endpoint = "/auth/register";
+        payload = { nom, email, numero_tel, mot_passe, adresse };
+      }
+
+      try {
+        const res = await fetch(apiBase + endpoint, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify(payload),
+        });
+
+        const data = await res.json();
+        out.textContent = JSON.stringify({ status: res.status, data }, null, 2);
+
+        if (res.ok && data.redirectTo) {
+          window.location.href = "https://dashboard.nelagency.com" + data.redirectTo;
+        }
+      } catch (e) {
+        out.textContent = "Erreur: " + (e?.message || String(e));
+      }
+    });
+  </script>
+</body>
+</html>

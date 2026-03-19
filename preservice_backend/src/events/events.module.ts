@@ -8,11 +8,10 @@ import { NotificationsModule } from 'src/notifications/notifications.module';
 @Module({
   imports: [
     MongooseModule.forFeature([{ name: Event.name, schema: EventSchema }]),
-    NotificationsModule
+    NotificationsModule,
   ],
   controllers: [EventsController],
   providers: [EventsService],
-  exports: [MongooseModule, EventsService]
+  exports: [MongooseModule, EventsService],
 })
-
 export class EventsModule {}

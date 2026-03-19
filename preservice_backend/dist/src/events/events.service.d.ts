@@ -7,12 +7,13 @@ export declare class EventsService {
     private model;
     private readonly notif;
     constructor(model: Model<EventDocument>, notif: NotificationsService);
+    private toPersistPayload;
     create(dto: CreateEventDto): Promise<import("mongoose").FlattenMaps<Event & import("mongoose").Document<unknown, any, any, Record<string, any>, {}> & Required<{
         _id: unknown;
     }> & {
         __v: number;
     }>>;
-    createEvent(dto: CreateEventDto, authorId: string, serveurIdsCiblés: string[]): Promise<import("mongoose").FlattenMaps<Event & import("mongoose").Document<unknown, any, any, Record<string, any>, {}> & Required<{
+    createEvent(dto: CreateEventDto, authorId: string, serveurIdsCibles: string[]): Promise<import("mongoose").FlattenMaps<Event & import("mongoose").Document<unknown, any, any, Record<string, any>, {}> & Required<{
         _id: unknown;
     }> & {
         __v: number;
@@ -41,7 +42,7 @@ export declare class EventsService {
     }>;
     kpi(): Promise<{
         label: string;
-        value: any;
+        value: number;
         difference: number;
         inProgress: boolean;
     }[]>;
@@ -52,7 +53,7 @@ export declare class EventsService {
     })[]>;
     typesPercent(): Promise<{
         label: string;
-        count: any;
+        count: number;
         percent: number;
     }[]>;
     typesKV(): {

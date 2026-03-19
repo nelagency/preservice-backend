@@ -83,7 +83,11 @@ __decorate([
     __metadata("design:type", Number)
 ], Timesheet.prototype, "workedMinutes", void 0);
 __decorate([
-    (0, mongoose_1.Prop)({ type: String, enum: ['submitted', 'approved', 'rejected'], default: 'submitted' }),
+    (0, mongoose_1.Prop)({
+        type: String,
+        enum: ['submitted', 'approved', 'rejected'],
+        default: 'submitted',
+    }),
     __metadata("design:type", String)
 ], Timesheet.prototype, "status", void 0);
 __decorate([
@@ -107,7 +111,11 @@ __decorate([
     __metadata("design:type", Number)
 ], Timesheet.prototype, "paidAmount", void 0);
 __decorate([
-    (0, mongoose_1.Prop)({ type: String, enum: ['unpaid', 'partial', 'paid'], default: 'unpaid' }),
+    (0, mongoose_1.Prop)({
+        type: String,
+        enum: ['unpaid', 'partial', 'paid'],
+        default: 'unpaid',
+    }),
     __metadata("design:type", String)
 ], Timesheet.prototype, "paymentStatus", void 0);
 __decorate([

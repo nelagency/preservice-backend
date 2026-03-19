@@ -19,11 +19,10 @@ let ServeurModule = class ServeurModule {
 exports.ServeurModule = ServeurModule;
 exports.ServeurModule = ServeurModule = __decorate([
     (0, common_1.Module)({
-        imports: [mongoose_1.MongooseModule.forFeature([
-                { name: serveur_entity_1.Serveur.name, schema: serveur_entity_1.ServeurSchema },
-            ]),
+        imports: [
+            mongoose_1.MongooseModule.forFeature([{ name: serveur_entity_1.Serveur.name, schema: serveur_entity_1.ServeurSchema }]),
             events_module_1.EventsModule,
-            participation_module_1.ParticipationModule
+            participation_module_1.ParticipationModule,
         ],
         controllers: [serveur_controller_1.ServeurController],
         providers: [serveur_service_1.ServeurService],

@@ -15,6 +15,7 @@ const websockets_1 = require("@nestjs/websockets");
 const socket_io_1 = require("socket.io");
 const jwt_1 = require("@nestjs/jwt");
 const common_1 = require("@nestjs/common");
+const security_utils_1 = require("../common/security.utils");
 function pick(obj, keys, fallback) {
     for (const k of keys) {
         const v = obj?.[k];
@@ -52,7 +53,9 @@ let NotificationsGateway = NotificationsGateway_1 = class NotificationsGateway {
             let lastError;
             for (const s of secrets.length ? secrets : [undefined]) {
                 try {
-                    payload = s ? this.jwt.verify(token, { secret: s }) : this.jwt.decode(token);
+                    payload = s
+                        ? this.jwt.verify(token, { secret: s })
+                        : this.jwt.decode(token);
                     if (payload)
                         break;
                 }
@@ -64,8 +67,10 @@ let NotificationsGateway = NotificationsGateway_1 = class NotificationsGateway {
                 throw lastError || new Error('Invalid token');
             const realm = pick(payload, ['realm', 'aud']) ||
                 (payload?.role ? 'user' : 'serveur');
-            let id = pick(payload, ['sub', 'userId', '_id', 'id'])
-                || (realm === 'serveur' ? pick(payload, ['serveurId', 'serveur', 'srvId']) : undefined);
+            const id = pick(payload, ['sub', 'userId', '_id', 'id']) ||
+                (realm === 'serveur'
+                    ? pick(payload, ['serveurId', 'serveur', 'srvId'])
+                    : undefined);
             if (!id)
                 throw new Error('No subject id in token');
             const room = realm === 'serveur' ? `s:${id}` : `u:${id}`;
@@ -103,7 +108,18 @@ __decorate([
 exports.NotificationsGateway = NotificationsGateway = NotificationsGateway_1 = __decorate([
     (0, websockets_1.WebSocketGateway)({
         namespace: '/ws',
-        cors: { origin: '*', credentials: true },
+        cors: {
+            origin: (origin, callback) => {
+                if (!origin)
+                    return callback(null, true);
+                const allowedOrigins = (0, security_utils_1.getAllowedOrigins)();
+                if ((0, security_utils_1.isOriginAllowed)(origin, allowedOrigins)) {
+                    return callback(null, true);
+                }
+                return callback(new Error(`WS CORS blocked for origin: ${origin}`), false);
+            },
+            credentials: true,
+        },
         transports: ['websocket'],
     }),
     __metadata("design:paramtypes", [jwt_1.JwtService])

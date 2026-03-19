@@ -2,7 +2,10 @@ import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { AboutContentController } from './about-content.controller';
 import { AboutContentService } from './about-content.service';
-import { AboutContent, AboutContentSchema } from './entities/about-content.entity';
+import {
+  AboutContent,
+  AboutContentSchema,
+} from './entities/about-content.entity';
 
 @Module({
   imports: [
@@ -14,4 +17,3 @@ import { AboutContent, AboutContentSchema } from './entities/about-content.entit
   providers: [AboutContentService],
 })
 export class AboutContentModule {}
-

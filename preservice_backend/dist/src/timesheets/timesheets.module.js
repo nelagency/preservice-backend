@@ -21,16 +21,17 @@ let TimesheetsModule = class TimesheetsModule {
 exports.TimesheetsModule = TimesheetsModule;
 exports.TimesheetsModule = TimesheetsModule = __decorate([
     (0, common_1.Module)({
-        imports: [mongoose_1.MongooseModule.forFeature([
+        imports: [
+            mongoose_1.MongooseModule.forFeature([
                 { name: timesheet_entity_1.Timesheet.name, schema: timesheet_entity_1.TimesheetSchema },
             ]),
             participation_module_1.ParticipationModule,
             events_module_1.EventsModule,
             serveur_module_1.ServeurModule,
-            notifications_module_1.NotificationsModule
+            notifications_module_1.NotificationsModule,
         ],
         controllers: [timesheets_controller_1.TimesheetsController],
-        providers: [timesheets_service_1.TimesheetsService]
+        providers: [timesheets_service_1.TimesheetsService],
     })
 ], TimesheetsModule);
 //# sourceMappingURL=timesheets.module.js.map

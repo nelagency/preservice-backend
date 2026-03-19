@@ -60,6 +60,10 @@ let User = class User {
     mot_passe;
     isActive;
     role;
+    twoFactorEnabled;
+    twoFactorSecret;
+    twoFactorTempSecret;
+    twoFactorEnabledAt;
 };
 exports.User = User;
 __decorate([
@@ -93,9 +97,31 @@ __decorate([
 ], User.prototype, "isActive", void 0);
 __decorate([
     (0, swagger_1.ApiProperty)({ enum: UserRole, default: UserRole.user }),
-    (0, mongoose_1.Prop)({ type: String, enum: Object.values(UserRole), default: UserRole.user, index: true }),
+    (0, mongoose_1.Prop)({
+        type: String,
+        enum: Object.values(UserRole),
+        default: UserRole.user,
+        index: true,
+    }),
     __metadata("design:type", String)
 ], User.prototype, "role", void 0);
+__decorate([
+    (0, swagger_1.ApiPropertyOptional)({ default: false }),
+    (0, mongoose_1.Prop)({ type: Boolean, default: false }),
+    __metadata("design:type", Boolean)
+], User.prototype, "twoFactorEnabled", void 0);
+__decorate([
+    (0, mongoose_1.Prop)({ type: String, select: false }),
+    __metadata("design:type", String)
+], User.prototype, "twoFactorSecret", void 0);
+__decorate([
+    (0, mongoose_1.Prop)({ type: String, select: false }),
+    __metadata("design:type", String)
+], User.prototype, "twoFactorTempSecret", void 0);
+__decorate([
+    (0, mongoose_1.Prop)({ type: Date }),
+    __metadata("design:type", Date)
+], User.prototype, "twoFactorEnabledAt", void 0);
 exports.User = User = __decorate([
     (0, mongoose_1.Schema)({ timestamps: true })
 ], User);
