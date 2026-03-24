@@ -37,6 +37,9 @@ let TimesheetsController = class TimesheetsController {
             return this.svc.listPending();
         return this.svc.listPending();
     }
+    async serveurHistory(serveurId) {
+        return this.svc.listForServeur(serveurId);
+    }
     async review(id, req, body) {
         return this.svc.review(id, req.user.sub, body);
     }
@@ -78,6 +81,15 @@ __decorate([
     __metadata("design:paramtypes", [Object]),
     __metadata("design:returntype", Promise)
 ], TimesheetsController.prototype, "pending", null);
+__decorate([
+    (0, common_1.UseGuards)(roles_guard_1.RolesGuard),
+    (0, roles_decorator_1.Roles)('superadmin', 'admin'),
+    (0, common_1.Get)('admin/serveurs/:serveurId/timesheets'),
+    __param(0, (0, common_1.Param)('serveurId')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", Promise)
+], TimesheetsController.prototype, "serveurHistory", null);
 __decorate([
     (0, common_1.UseGuards)(roles_guard_1.RolesGuard),
     (0, roles_decorator_1.Roles)('superadmin', 'admin'),

@@ -20,6 +20,11 @@ export declare class TimesheetsController {
     }> & {
         __v: number;
     })[]>;
+    serveurHistory(serveurId: string): Promise<(import("mongoose").FlattenMaps<import("./entities/timesheet.entity").TimesheetDocument> & Required<{
+        _id: import("mongoose").FlattenMaps<unknown>;
+    }> & {
+        __v: number;
+    })[]>;
     review(id: string, req: any, body: ReviewTimesheetDto): Promise<import("mongoose").Document<unknown, {}, import("./entities/timesheet.entity").TimesheetDocument, {}, {}> & import("./entities/timesheet.entity").Timesheet & import("mongoose").Document<unknown, any, any, Record<string, any>, {}> & Required<{
         _id: unknown;
     }> & {
