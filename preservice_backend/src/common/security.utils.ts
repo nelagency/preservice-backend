@@ -44,7 +44,6 @@ export function getAllowedOrigins(env = process.env): Set<string> {
     'http://127.0.0.1:3000',
     'http://127.0.0.1:3001',
     'https://prest-service-front-ashen.vercel.app',
-    'https://dasboard.nelagency.com',
     'https://dashboard.nelagency.com',
   ]);
 
