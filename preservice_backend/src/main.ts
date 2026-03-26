@@ -16,6 +16,16 @@ import {
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   const expressApp = app.getHttpAdapter().getInstance();
+  const swaggerCsp = [
+    "default-src 'self'",
+    "base-uri 'self'",
+    "img-src 'self' data: https:",
+    "style-src 'self' 'unsafe-inline'",
+    "script-src 'self' 'unsafe-inline'",
+    "font-src 'self' data:",
+    "connect-src 'self'",
+    "frame-ancestors 'none'",
+  ].join('; ');
 
   expressApp.set('trust proxy', 1);
   expressApp.disable('x-powered-by');
@@ -45,9 +55,12 @@ async function bootstrap() {
       'Permissions-Policy',
       'camera=(), microphone=(), geolocation=(), browsing-topics=()',
     );
+    const isSwaggerPath = req.path.startsWith('/api/docs');
     res.setHeader(
       'Content-Security-Policy',
-      "default-src 'none'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'",
+      isSwaggerPath
+        ? swaggerCsp
+        : "default-src 'none'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'",
     );
     res.setHeader('Cross-Origin-Resource-Policy', 'same-site');
     if (req.secure) {
