@@ -78,6 +78,11 @@ const mongoLog = new Logger('MongoDB');
           serverSelectionTimeoutMS: 10000,
           connectTimeoutMS: 10000,
           socketTimeoutMS: 45000,
+          heartbeatFrequencyMS: Number(
+            process.env.MONGO_HEARTBEAT_FREQUENCY_MS ?? 10000,
+          ),
+          maxIdleTimeMS: Number(process.env.MONGO_MAX_IDLE_TIME_MS ?? 30000),
+          family: Number(process.env.MONGO_IP_FAMILY ?? 4),
           maxPoolSize: 10,
           minPoolSize: 1,
           retryWrites: true,
@@ -88,6 +93,9 @@ const mongoLog = new Logger('MongoDB');
           connectionFactory: (connection: Connection) => {
             connection.on('connected', () => {
               mongoLog.log('Connected');
+            });
+            connection.on('reconnected', () => {
+              mongoLog.log('Reconnected');
             });
             connection.on('error', (error: unknown) => {
               const message =
