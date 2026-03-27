@@ -23,7 +23,7 @@ import { TimesheetsModule } from './timesheets/timesheets.module';
 import type { StringValue } from 'ms';
 import { NotificationsModule } from './notifications/notifications.module';
 import { MediaModule } from './media/media.module';
-import { Connection } from 'mongoose';
+import mongoose, { Connection } from 'mongoose';
 import { InstagramModule } from './instagram/instagram.module';
 import { ContactModule } from './contact/contact.module';
 import { ServicesContentModule } from './services-content/services-content.module';
@@ -73,8 +73,18 @@ const mongoLog = new Logger('MongoDB');
           ).toLowerCase() === 'true';
         const inProduction =
           String(process.env.NODE_ENV).toLowerCase() === 'production';
-        return {
-          uri: process.env.MONGO_URI,
+        const mongoUri = process.env.MONGO_URI;
+        const reconnectDelayMs = Number(
+          process.env.MONGO_RECONNECT_DELAY_MS ?? 3000,
+        );
+        const reconnectAttempts = Number(
+          process.env.MONGO_RECONNECT_ATTEMPTS ?? 20,
+        );
+        let reconnectInFlight = false;
+        let reconnectTimer: NodeJS.Timeout | null = null;
+
+        const mongoOptions = {
+          uri: mongoUri,
           serverSelectionTimeoutMS: 10000,
           connectTimeoutMS: 10000,
           socketTimeoutMS: 45000,
@@ -88,14 +98,84 @@ const mongoLog = new Logger('MongoDB');
           retryWrites: true,
           retryReads: true,
           bufferCommands: false,
+        } as const;
+
+        const scheduleReconnect = (connection: Connection) => {
+          if (!mongoUri || reconnectInFlight || reconnectTimer) {
+            return;
+          }
+
+          let attempt = 0;
+          reconnectInFlight = true;
+
+          const runReconnect = async () => {
+            if (connection.readyState === 1) {
+              reconnectInFlight = false;
+              reconnectTimer = null;
+              return;
+            }
+
+            attempt += 1;
+            mongoLog.warn(
+              `Reconnect attempt ${attempt}/${reconnectAttempts}...`,
+            );
+
+            try {
+              await connection.openUri(mongoUri, mongoOptions);
+              mongoLog.log('Manual reconnect succeeded');
+              reconnectInFlight = false;
+              reconnectTimer = null;
+              return;
+            } catch (error: unknown) {
+              const message =
+                error instanceof Error ? error.message : String(error);
+              mongoLog.error(`Reconnect failed: ${message}`);
+            }
+
+            if (attempt >= reconnectAttempts) {
+              reconnectInFlight = false;
+              reconnectTimer = null;
+              if (inProduction && failFastOnDisconnect) {
+                mongoLog.error(
+                  'Reconnect attempts exhausted: exiting process',
+                );
+                setTimeout(() => process.exit(1), 250);
+              }
+              return;
+            }
+
+            reconnectTimer = setTimeout(() => {
+              reconnectTimer = null;
+              void runReconnect();
+            }, reconnectDelayMs);
+          };
+
+          reconnectTimer = setTimeout(() => {
+            reconnectTimer = null;
+            void runReconnect();
+          }, reconnectDelayMs);
+        };
+
+        return {
+          ...mongoOptions,
           retryAttempts: Number(process.env.MONGO_RETRY_ATTEMPTS ?? 6),
           retryDelay: Number(process.env.MONGO_RETRY_DELAY_MS ?? 3000),
           connectionFactory: (connection: Connection) => {
             connection.on('connected', () => {
               mongoLog.log('Connected');
+              reconnectInFlight = false;
+              if (reconnectTimer) {
+                clearTimeout(reconnectTimer);
+                reconnectTimer = null;
+              }
             });
             connection.on('reconnected', () => {
               mongoLog.log('Reconnected');
+              reconnectInFlight = false;
+              if (reconnectTimer) {
+                clearTimeout(reconnectTimer);
+                reconnectTimer = null;
+              }
             });
             connection.on('error', (error: unknown) => {
               const message =
@@ -104,12 +184,7 @@ const mongoLog = new Logger('MongoDB');
             });
             connection.on('disconnected', () => {
               mongoLog.error('Disconnected');
-              if (inProduction && failFastOnDisconnect) {
-                mongoLog.error(
-                  'Fail-fast enabled: exiting process after Mongo disconnect',
-                );
-                setTimeout(() => process.exit(1), 250);
-              }
+              scheduleReconnect(connection);
             });
             return connection;
           },
