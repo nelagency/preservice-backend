@@ -84,7 +84,6 @@ const mongoLog = new Logger('MongoDB');
         let reconnectTimer: NodeJS.Timeout | null = null;
 
         const mongoOptions = {
-          uri: mongoUri,
           serverSelectionTimeoutMS: 10000,
           connectTimeoutMS: 10000,
           socketTimeoutMS: 45000,
@@ -157,6 +156,7 @@ const mongoLog = new Logger('MongoDB');
         };
 
         return {
+          uri: mongoUri,
           ...mongoOptions,
           retryAttempts: Number(process.env.MONGO_RETRY_ATTEMPTS ?? 6),
           retryDelay: Number(process.env.MONGO_RETRY_DELAY_MS ?? 3000),
